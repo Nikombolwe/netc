@@ -18,37 +18,38 @@
             <button id="refresh-logs-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition">
                 🔄 Refresh
             </button>
-            <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ Ongeza Mfanyakazi</a>
+            <a href="{% url 'add_user' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ Ongeza Mfanyakazi</a>
             <a href="#" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Manual Entry</a>
         </div>
     </div>
 
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div class="dashboard-card">
+        <!-- KADI YA WAFANYAKAZI WOTE (Inabonyezeka sasa) -->
+        <div class="dashboard-card cursor-pointer hover:shadow-md transition" onclick="toggleEmployeesTable()">
             <p class="text-xs font-semibold text-gray-400 uppercase">Wafanyakazi Wote</p>
-            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ total_employees }}</h3>
+            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ total_employees|default:all_employees.count }}</h3>
         </div>
         <div class="dashboard-card card-present">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliofika Leo</p>
-            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ present_today }}</h3>
+            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ present_today|default:"0" }}</h3>
         </div>
         <div class="dashboard-card card-late">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliochelewa</p>
-            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today }}</h3>
+            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today|default:"0" }}</h3>
         </div>
         <div class="dashboard-card card-absent">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliokosa / Likizo</p>
-            <h3 class="text-2xl font-bold text-red-600 mt-1">{{ on_leave_or_absent }}</h3>
+            <h3 class="text-2xl font-bold text-red-600 mt-1">{{ on_leave_or_absent|default:"0" }}</h3>
         </div>
         <div class="dashboard-card card-pending">
             <p class="text-xs font-semibold text-gray-400 uppercase">Maombi Yaliyopo</p>
-            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ pending_requests }}</h3>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ pending_requests|default:"0" }}</h3>
         </div>
     </div>
 
     <!-- Live Attendance Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
         <h2 class="text-lg font-bold text-gray-800 mb-4">Mahudhurio ya Leo (Live Logs)</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -89,10 +90,65 @@
             </table>
         </div>
     </div>
+
+    <!-- ORODHA YA WAFANYAKAZI WOTE (Table inayojitokeza ukibonyeza kadi) -->
+    <div id="all-employees-section" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-300">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Orodha ya Wafanyakazi Waliosajiliwa</h2>
+                <p class="text-xs text-gray-500">Taarifa zote za watumiaji walio kwenye mfumo.</p>
+            </div>
+            <button onclick="toggleEmployeesTable()" class="text-gray-400 hover:text-gray-600 text-sm font-semibold bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg transition">
+                ✕ Funga
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
+                        <th class="p-3">Mfanyakazi</th>
+                        <th class="p-3">Code / ID</th>
+                        <th class="p-3">Idara</th>
+                        <th class="p-3">Wadhifa (Role)</th>
+                        <th class="p-3">Namba ya Simu</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    {% for emp in all_employees %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-3 font-medium text-gray-800">
+                            {{ emp.first_name }} {{ emp.last_name }}
+                        </td>
+                        <td class="p-3 text-gray-500 font-mono">{{ emp.employee_code|default:emp.employee_id|default:"-" }}</td>
+                        <td class="p-3 text-gray-500">{{ emp.department.name|default:"-" }}</td>
+                        <td class="p-3 text-gray-500">{{ emp.job_title|default:emp.officer_position|default:"Mfanyakazi" }}</td>
+                        <td class="p-3 text-gray-500">{{ emp.phone_number|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-gray-400">Hakuna mfanyakazi aliyesajiliwa kwenye mfumo bado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <!-- 3. KULINK JAVASCRIPT FILE YAKO HAPA CHINI -->
 <script src="{% static 'js/dashboard.js' %}"></script>
+
+<script>
+function toggleEmployeesTable() {
+    const section = document.getElementById('all-employees-section');
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        section.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        section.classList.add('hidden');
+    }
+}
+</script>
 {% endblock %}

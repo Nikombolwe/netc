@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Apps Zetu
-    # 'employees',
+    'employees',
     # 'attendance',
     # 'leaves',
     'dashboard',

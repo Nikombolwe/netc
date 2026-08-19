@@ -2,6 +2,15 @@
 Django settings for Smart Employee Attendance & Workforce Management System.
 Generated for project 'smart_attendance' / 'netc'.
 """
+import pymysql
+pymysql.install_as_MySQLdb()
+
+# Bypassing MySQL 8.4 restriction for cPanel (MySQL 8.0.x)
+from django.db.backends.base.base import BaseDatabaseWrapper
+BaseDatabaseWrapper.check_database_version_supported = lambda self: None
+
+import pymysql
+pymysql.install_as_MySQLdb()
 
 from pathlib import Path
 import os
@@ -47,14 +56,14 @@ INSTALLED_APPS = [
 
     # System Custom Apps (Modules)
     'employees',
-    'attendance',
-    'leaves',
-    'emergencies',
-    'permissions',
-    'business_trips',
-    'notifications',
-    'warnings',
-    'reports',
+    # 'attendance',
+    # 'leaves',
+    # 'emergencies',
+    # 'permissions',
+    # 'business_trips',
+    # 'notifications',
+    # 'warnings',
+    # 'reports',
     'dashboard',
 ]
 
@@ -97,14 +106,17 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ----------------------------------------------------------------------
 # 7. DATABASE CONFIGURATION (MySQL)
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# 7. DATABASE CONFIGURATION (Direct MySQL phpMyAdmin Connection)
+# ----------------------------------------------------------------------
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.mysql'),
-        'NAME': config('DB_NAME', default='smart_attendance_db'),
-        'USER': config('DB_USER', default='netcadvent'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='127.0.0.1'),
-        'PORT': config('DB_PORT', default='3306'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'netcadvent_smart_attendance_db', # Jina kamili la DB kutoka cPanel
+        'USER': 'netcadvent_agape',                     # User uliyemtengeneza cPanel
+        'PASSWORD': 'foddyn-teprar-zeRri4',           # Password uliyotengeneza cPanel
+        'HOST': '167.86.86.227',  # au 'ran-002.routeafrica.net'           # Mfano '192.168.1.1' au 'yourdomain.com'
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4',
