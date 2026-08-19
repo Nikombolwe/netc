@@ -169,80 +169,41 @@
         toggleFields();
         userTypeSelect.addEventListener('change', toggleFields);
 
-        // 2. Fingerprint WebAuthn Script
+        // 2. Fingerprint Script (Development / Testing Mode)
         const btnRegisterFP = document.getElementById('btnRegisterFingerprint');
         const fpStatus = document.getElementById('fingerprintStatus');
         const fpCredentialInput = document.getElementById('fingerprintCredentialId');
 
-        btnRegisterFP.addEventListener('click', async function(e) {
+        btnRegisterFP.addEventListener('click', function(e) {
             e.preventDefault();
 
-            if (!window.PublicKeyCredential) {
-                alert("Browser au Kifaa hiki hakisemi WebAuthn (Touch ID / Biometrics).");
-                return;
-            }
-
-            const username = document.getElementById('usernameInput').value;
-            const firstName = document.getElementById('firstNameInput').value;
+            const usernameInput = document.getElementById('usernameInput');
+            const username = usernameInput ? usernameInput.value : '';
 
             if (!username) {
                 alert("Tafadhali jaza Username kwanza kabla ya kusoma Fingerprint.");
                 return;
             }
 
-            try {
-                fpStatus.textContent = "⏳ Weka kidole kwenye Touch ID / Scanner...";
-                fpStatus.className = "text-sm font-medium text-blue-600 animate-pulse";
+            // Onyesha muonekano wa kusoma kidole
+            fpStatus.textContent = "⏳ Inasoma alama ya kidole...";
+            fpStatus.className = "text-sm font-medium text-blue-600 animate-pulse";
+            btnRegisterFP.disabled = true;
 
-                const challengeBuffer = new Uint8Array(32);
-                window.crypto.getRandomValues(challengeBuffer);
+            // Inasubiri sekunde 1 ku-simulate mchakato wa scanner
+            setTimeout(function() {
+                // Tengeneza Unique Mock Biometric ID ya huyo mfanyakazi
+                const mockFingerprintId = "FP_BIO_" + username.toUpperCase() + "_" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-                const userIdBuffer = new TextEncoder().encode(username);
+                // Hifadhi token kwenye hidden input ya form
+                fpCredentialInput.value = mockFingerprintId;
 
-                const publicKeyCredentialCreationOptions = {
-                    challenge: challengeBuffer,
-                    rp: {
-                        name: "NETC HR System"
-                        // Weka tupu au ondoa id ili isikatae domain ya localhost
-                    },
-                    user: {
-                        id: userIdBuffer,
-                        name: username,
-                        displayName: firstName || username
-                    },
-                    pubKeyCredParams: [
-                        { alg: -7, type: "public-key" },
-                        { alg: -257, type: "public-key" }
-                    ],
-                    authenticatorSelection: {
-                        userVerification: "preferred"
-                    },
-                    timeout: 60000
-                };
-
-                const credential = await navigator.credentials.create({
-                    publicKey: publicKeyCredentialCreationOptions
-                });
-
-                const rawId = new Uint8Array(credential.rawId);
-                let binary = '';
-                for (let i = 0; i < rawId.byteLength; i++) {
-                    binary += String.fromCharCode(rawId[i]);
-                }
-                const base64Id = btoa(binary);
-
-                fpCredentialInput.value = base64Id;
-
+                // Badilisha status na disable kitufe baada ya kusajili
                 fpStatus.textContent = "✅ Fingerprint Imesajiliwa Kikamilifu!";
                 fpStatus.className = "text-sm font-bold text-emerald-600";
-                btnRegisterFP.classList.replace('bg-emerald-600', 'bg-gray-400');
-                btnRegisterFP.disabled = true;
-
-            } catch (err) {
-                console.error("Biometric Error:", err);
-                fpStatus.textContent = "❌ Usajili wa Fingerprint Umeshindikana (" + err.message + ")";
-                fpStatus.className = "text-sm font-medium text-red-600";
-            }
+                
+                btnRegisterFP.className = "bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed";
+            }, 1000);
         });
     });
 </script>

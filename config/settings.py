@@ -56,8 +56,8 @@ INSTALLED_APPS = [
 
     # System Custom Apps (Modules)
     'employees',
-    # 'attendance',
-    # 'leaves',
+    'attendance',
+    'leaves',
     # 'emergencies',
     # 'permissions',
     # 'business_trips',
