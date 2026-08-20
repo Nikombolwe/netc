@@ -40,7 +40,7 @@ INSTALLED_APPS = [
 
     # Apps Zetu
     'employees',
-    # 'attendance',
+    'attendance',
     # 'leaves',
     'dashboard',
 ]
