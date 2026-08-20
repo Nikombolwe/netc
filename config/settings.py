@@ -2,16 +2,6 @@
 Django settings for Smart Employee Attendance & Workforce Management System.
 Generated for project 'smart_attendance' / 'netc'.
 """
-import pymysql
-pymysql.install_as_MySQLdb()
-
-# Bypassing MySQL 8.4 restriction for cPanel (MySQL 8.0.x)
-from django.db.backends.base.base import BaseDatabaseWrapper
-BaseDatabaseWrapper.check_database_version_supported = lambda self: None
-
-import pymysql
-pymysql.install_as_MySQLdb()
-
 from pathlib import Path
 import os
 from decouple import config
@@ -24,6 +14,10 @@ try:
     pymysql.install_as_MySQLdb()
 except ImportError:
     pass
+
+# Bypassing MySQL 8.4 restriction for cPanel (MySQL 8.0.x)
+from django.db.backends.base.base import BaseDatabaseWrapper
+BaseDatabaseWrapper.check_database_version_supported = lambda self: None
 
 # ----------------------------------------------------------------------
 # 2. BASE DIRECTORY
@@ -58,12 +52,12 @@ INSTALLED_APPS = [
     'employees',
     'attendance',
     'leaves',
-    # 'emergencies',
-    # 'permissions',
-    # 'business_trips',
-    # 'notifications',
-    # 'warnings',
-    # 'reports',
+    'emergencies',
+    'permissions',
+    'business_trips',
+    'notifications',
+    'warnings',
+    'reports',
     'dashboard',
 ]
 
@@ -80,7 +74,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'core.urls'  # Badilisha 'config' ikiwa jina la folder lako la settings ni tofauti (mfano 'netc.urls')
+ROOT_URLCONF = 'core.urls'
 
 # ----------------------------------------------------------------------
 # 6. TEMPLATES
@@ -104,21 +98,18 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 # ----------------------------------------------------------------------
-# 7. DATABASE CONFIGURATION (MySQL)
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
 # 7. DATABASE CONFIGURATION (Direct MySQL phpMyAdmin Connection)
 # ----------------------------------------------------------------------
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'netcadvent_smart_attendance_db', # Jina kamili la DB kutoka cPanel
-        'USER': 'netcadvent_agape',                     # User uliyemtengeneza cPanel
-        'PASSWORD': 'foddyn-teprar-zeRri4',           # Password uliyotengeneza cPanel
-        'HOST': '167.86.86.227',  # au 'ran-002.routeafrica.net'           # Mfano '192.168.1.1' au 'yourdomain.com'
+        'NAME': 'netcadvent_smart_attendance_db',
+        'USER': 'netcadvent_agape',
+        'PASSWORD': 'foddyn-teprar-zeRri4',
+        'HOST': '167.86.86.227',
         'PORT': '3306',
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'init_command': "SET time_zone = '+03:00', sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4',
         },
     }
@@ -147,7 +138,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ----------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Africa/Dar_es_Salaam'  # Imewekwa Swahili/East Africa Time Zone
+TIME_ZONE = 'Africa/Dar_es_Salaam'  # East Africa Time Zone (EAT)
 
 USE_I18N = True
 
@@ -180,3 +171,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+# ----------------------------------------------------------------------
+# 13. EMAIL CONFIGURATION (Google Workspace / NETC HQ)
+# ----------------------------------------------------------------------
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='info@netcadventist.org')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='qwojyagougqzusus')
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='NETC Attendance System <info@netcadventist.org>')

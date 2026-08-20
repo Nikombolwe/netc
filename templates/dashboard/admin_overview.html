@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
-{% load static %}  <!-- 1. HII NDIYO TAG INAYOWEZESHA LINK ZA STATIC FILES -->
+{% load static %}
 
 {% block extra_css %}
-<!-- 2. KULINK CSS FILE YAKO HAPA -->
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
 
@@ -15,7 +14,7 @@
             <p class="text-sm text-gray-500">Muhtasari wa mahudhurio ya leo ({% now "j F, Y" %})</p>
         </div>
         <div class="flex space-x-3">
-            <button id="refresh-logs-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition">
+            <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition">
                 🔄 Refresh
             </button>
             <a href="{% url 'add_user' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ Ongeza Mfanyakazi</a>
@@ -25,26 +24,25 @@
 
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <!-- KADI YA WAFANYAKAZI WOTE (Inabonyezeka sasa) -->
-        <div class="dashboard-card cursor-pointer hover:shadow-md transition" onclick="toggleEmployeesTable()">
+        <div class="dashboard-card cursor-pointer hover:shadow-md transition bg-white p-4 rounded-xl border border-gray-100" onclick="toggleEmployeesTable()">
             <p class="text-xs font-semibold text-gray-400 uppercase">Wafanyakazi Wote</p>
             <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ total_employees|default:0 }}</h3>
         </div>
-        <div class="dashboard-card card-present">
+        <div class="dashboard-card card-present bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-green-500">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliofika Leo</p>
-            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ present_today|default:"0" }}</h3>
+            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ present_today|default:0 }}</h3>
         </div>
-        <div class="dashboard-card card-late">
+        <div class="dashboard-card card-late bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-yellow-500">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliochelewa</p>
-            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today|default:"0" }}</h3>
+            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today|default:0 }}</h3>
         </div>
-        <div class="dashboard-card card-absent">
+        <div class="dashboard-card card-absent bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-red-500">
             <p class="text-xs font-semibold text-gray-400 uppercase">Waliokosa / Likizo</p>
-            <h3 class="text-2xl font-bold text-red-600 mt-1">{{ on_leave_or_absent|default:"0" }}</h3>
+            <h3 class="text-2xl font-bold text-red-600 mt-1">{{ on_leave_or_absent|default:0 }}</h3>
         </div>
-        <div class="dashboard-card card-pending">
+        <div class="dashboard-card card-pending bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-blue-500">
             <p class="text-xs font-semibold text-gray-400 uppercase">Maombi Yaliyopo</p>
-            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ pending_requests|default:"0" }}</h3>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ pending_requests|default:0 }}</h3>
         </div>
     </div>
 
@@ -56,34 +54,81 @@
                 <thead>
                     <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
                         <th class="p-3">Mfanyakazi</th>
-                        <th class="p-3">ID</th>
+                        <th class="p-3">ID / Code</th>
                         <th class="p-3">Idara</th>
-                        <th class="p-3">Muda wa Check-In</th>
-                        <th class="p-3">Status</th>
+                        <th class="p-3">Check-In</th>
+                        <th class="p-3">Check-Out</th>
+                        <th class="p-3">Hali (Status)</th>
                         <th class="p-3">Njia (Source)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-sm">
                     {% for record in today_logs %}
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="p-3 font-medium text-gray-800">{{ record.employee.get_full_name }}</td>
-                        <td class="p-3 text-gray-500">{{ record.employee.employee_id }}</td>
-                        <td class="p-3 text-gray-500">{{ record.employee.department.name|default:"-" }}</td>
-                        <td class="p-3 text-gray-800 font-semibold">{{ record.check_in|time:"H:i A" }}</td>
-                        <td class="p-3">
-                            {% if record.status == 'PRESENT' %}
-                                <span class="badge badge-present">On Time</span>
-                            {% elif record.status == 'LATE' %}
-                                <span class="badge badge-late">Late</span>
+                        <!-- Jina la Mfanyakazi / Officer -->
+                        <td class="p-3 font-medium text-gray-800">
+                            {% if record.employee %}
+                                {{ record.employee.first_name }} {{ record.employee.last_name }}
+                            {% elif record.officer %}
+                                {{ record.officer.first_name }} {{ record.officer.last_name }}
                             {% else %}
-                                <span class="badge badge-absent">{{ record.status }}</span>
+                                Mtumiaji Aliyeondolewa
                             {% endif %}
                         </td>
-                        <td class="p-3 text-gray-500 text-xs">{{ record.get_source_display }}</td>
+
+                        <!-- Code / ID -->
+                        <td class="p-3 text-gray-500 font-mono">
+                            {% if record.employee %}
+                                {{ record.employee.employee_code|default:"-" }}
+                            {% elif record.officer %}
+                                {{ record.officer.officer_code|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <!-- Idara (Department) -->
+                        <td class="p-3 text-gray-500">
+                            {% if record.employee %}
+                                {{ record.employee.department.name|default:record.employee.department|default:"-" }}
+                            {% elif record.officer %}
+                                {{ record.officer.department.name|default:record.officer.department|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <!-- Check-In Time -->
+                        <td class="p-3 text-gray-800 font-semibold text-green-600">
+                            {{ record.check_in_time|time:"H:i:s A" }}
+                        </td>
+
+                        <!-- Check-Out Time -->
+                        <td class="p-3 text-gray-800 font-semibold text-blue-600">
+                            {% if record.check_out_time %}
+                                {{ record.check_out_time|time:"H:i:s A" }}
+                            {% else %}
+                                <span class="text-xs text-gray-400 italic">Bado hajatoka</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td class="p-3">
+                            {% if record.status == 'PRESENT' %}
+                                <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">PRESENT</span>
+                            {% elif record.status == 'LATE' %}
+                                <span class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">LATE</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">{{ record.status }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Source -->
+                        <td class="p-3 text-gray-500 text-xs">Biometric / API</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="p-4 text-center text-gray-400">Bado hakuna mahudhurio yoyote yaliyorekodiwa leo.</td>
+                        <td colspan="7" class="p-4 text-center text-gray-400">Bado hakuna mahudhurio yoyote yaliyorekodiwa leo.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -91,7 +136,7 @@
         </div>
     </div>
 
-    <!-- ORODHA YA WAFANYAKAZI WOTE (Table inayojitokeza ukibonyeza kadi) -->
+    <!-- ORODHA YA WAFANYAKAZI WOTE -->
     <div id="all-employees-section" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-300">
         <div class="flex justify-between items-center mb-4">
             <div>
@@ -137,9 +182,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- 3. KULINK JAVASCRIPT FILE YAKO HAPA CHINI -->
 <script src="{% static 'js/dashboard.js' %}"></script>
-
 <script>
 function toggleEmployeesTable() {
     const section = document.getElementById('all-employees-section');

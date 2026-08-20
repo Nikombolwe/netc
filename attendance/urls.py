@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+from .views import employee_checkin_view, fingerprint_scan_api
 
 urlpatterns = [
-    path('api/scan/', views.fingerprint_scan_api, name='api_scan'),
+    path('check-in/', employee_checkin_view, name='employee_checkin'),
+    path('api/scan/', fingerprint_scan_api, name='fingerprint_scan_api'),
 ]
