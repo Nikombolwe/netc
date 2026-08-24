@@ -162,14 +162,17 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
                     director_obj = getattr(dept, attr)
                     break
             
-            # 2. Kama idara haina director, tafuta mfanyakazi aliye na wadhifa (role/position) wa Mkurugenzi/Director
+            # 2. Kama idara haina director, tumia `job_title` au `is_director` badala ya `role`
             if not director_obj:
                 director_obj = Employee.objects.filter(
                     department=dept,
-                    role__icontains='Mkurugenzi'
+                    job_title__icontains='Mkurugenzi'
                 ).first() or Employee.objects.filter(
                     department=dept,
-                    role__icontains='Director'
+                    job_title__icontains='Director'
+                ).first() or Employee.objects.filter(
+                    department=dept,
+                    is_director=True
                 ).first()
 
         director_phone, director_email = extract_phone_and_email(director_obj)

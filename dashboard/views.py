@@ -1,29 +1,35 @@
 from django.shortcuts import render
 from django.utils import timezone
 from employees.models import Employee
-from attendance.models import Attendance  # Tumeongeza import hii
+from attendance.models import Attendance
 
 def admin_overview(request):
-    today = timezone.now().date()
+    # 1. Tumia Local Time kuoanisha tarehe na ukanda wa muda
+    today = timezone.localtime(timezone.now()).date()
     
-    # 1. Wafanyakazi Wote
-    all_employees = Employee.objects.all()
+    # 2. Wafanyakazi Wote pamoja na Idara zao
+    all_employees = Employee.objects.all().select_related('department')
     total_employees = all_employees.count()
     
-    # 2. Mahudhurio ya Leo
-    today_logs = Attendance.objects.filter(attendance_date=today).select_related('employee')
+    # 3. Mahudhurio ya Leo (Tumeondoa 'officer' kuzuia kosa la MySQL)
+    today_logs = Attendance.objects.filter(attendance_date=today).select_related('employee', 'employee__department')
     
-    # 3. Takwimu za Cards za Juu
+    # 4. Takwimu za Cards za Juu
     present_today = today_logs.count()
-    late_today = today_logs.filter(is_late=True).count()
+    
+    # Kadi ya waliochelewa (Inaangalia status='LATE' kwa usahihi)
+    late_today = today_logs.filter(status__iexact='LATE').count()
+    
+    # Waliokosa / Likizo
+    on_leave_or_absent = max(0, total_employees - present_today)
     
     context = {
         'all_employees': all_employees,
         'total_employees': total_employees,
         'present_today': present_today,
-        'late_today': late_today,
-        'on_leave_or_absent': 0,
+        'late_today': late_today,  # Sasa itasoma 3
+        'on_leave_or_absent': on_leave_or_absent,
         'pending_requests': 0,
-        'today_logs': today_logs,  # Sasa hivi inabeba mahudhurio ya leo
+        'today_logs': today_logs,
     }
-    return render(request, 'dashboard/admin_overview.html', context)
+    return render(request, 'dashboards/admin_overview.html', context)

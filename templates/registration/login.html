@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingia kwenye Mfumo - Smart Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-200">
+        
+        <!-- LOGO & HEADER -->
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">Smart Attendance System</h2>
+            <p class="text-sm text-slate-500">Ingiza taarifa zako ili kuingia kwenye mfumo</p>
+        </div>
+
+        <!-- MESSAGES / ERRORS -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-3 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-green-100 text-green-700 border border-green-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- LOGIN FORM -->
+        <form method="POST" action="{% url 'login' %}" class="space-y-4">
+            {% csrf_token %}
+
+            <!-- AINA YA MTUMIAJI (ROLE DROPDOWN) -->
+            <div>
+                <label for="role" class="block text-sm font-semibold text-slate-700 mb-1">Aina ya Akaunti (Role) *</label>
+                <select id="role" name="role" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
+                    <option value="" disabled selected>-- Chagua Aina ya Mtumiaji --</option>
+                    <option value="employee">Employee (Mfanyakazi Wa Kawaida)</option>
+                    <option value="director">Director (Mkurugenzi wa Idara)</option>
+                    <option value="officer">Officer (Mwenyekiti / Katibu / Mhazini)</option>
+                </select>
+            </div>
+
+            <!-- USERNAME -->
+            <div>
+                <label for="username" class="block text-sm font-semibold text-slate-700 mb-1">Username (Jina la Mtumiaji) *</label>
+                <input type="text" id="username" name="username" autocomplete="username" required placeholder="Ingiza username" 
+                       class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
+            </div>
+
+            <!-- PASSWORD -->
+            <div>
+                <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">Neno la Siri (Password) *</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••" 
+                       class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
+            </div>
+
+            <!-- BUTTON -->
+            <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition duration-200">
+                Ingia Mfumoni (Login)
+            </button>
+        </form>
+
+    </div>
+
+</body>
+</html>

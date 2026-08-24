@@ -8,19 +8,18 @@ class Department(models.Model):
     department_name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     
-    # Kwenye phpMyAdmin column hii inaitwa 'head_of_employee_id'
     head_of_department = models.ForeignKey(
         'Employee', 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
-        db_column='head_of_employee_id',  # Inalazimisha kusoma column ya phpMyAdmin
+        db_column='head_of_employee_id',
         related_name='managed_departments'
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'departments'  # <--- INAAMBIA DJANGO ISOME TABLE YA 'departments' phpMyAdmin
+        db_table = 'departments'
 
     def __str__(self):
         return self.department_name
@@ -35,7 +34,8 @@ class OfficerPosition(models.Model):
     description = models.TextField(blank=True, null=True)
 
     class Meta:
-        db_table = 'officer_positions'  # <--- INAAMBIA DJANGO ISOME TABLE YA 'officer_positions' phpMyAdmin
+        # IMEBADILISHWA: Lazima isome 'employees_officerposition' ili Foreign Key ya MySQL isikatae
+        db_table = 'employees_officerposition'
 
     def __str__(self):
         return self.position_name
@@ -68,7 +68,7 @@ class Employee(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'employees'  # <--- Inasoma table ya 'employees' phpMyAdmin
+        db_table = 'employees'
 
     def __str__(self):
         role_label = "Director" if self.is_director else "Employee"
@@ -92,13 +92,14 @@ class Officer(models.Model):
     position = models.ForeignKey(
         OfficerPosition, 
         on_delete=models.RESTRICT, 
+        db_column='position_id',
         related_name='officers'
     )
     fingerprint_id = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'officers'  # au jina la table ya officer kama ipo phpMyAdmin
+        db_table = 'employees_officer'
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.position.position_name})"

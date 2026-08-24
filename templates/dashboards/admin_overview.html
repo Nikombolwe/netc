@@ -14,7 +14,7 @@
             <p class="text-sm text-gray-500">Muhtasari wa mahudhurio ya leo ({% now "j F, Y" %})</p>
         </div>
         <div class="flex space-x-3">
-            <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition">
+            <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
                 🔄 Refresh
             </button>
             <a href="{% url 'add_user' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ Ongeza Mfanyakazi</a>
@@ -65,7 +65,6 @@
                 <tbody class="divide-y divide-gray-100 text-sm">
                     {% for record in today_logs %}
                     <tr class="hover:bg-gray-50 transition">
-                        <!-- Jina la Mfanyakazi / Officer -->
                         <td class="p-3 font-medium text-gray-800">
                             {% if record.employee %}
                                 {{ record.employee.first_name }} {{ record.employee.last_name }}
@@ -76,7 +75,6 @@
                             {% endif %}
                         </td>
 
-                        <!-- Code / ID -->
                         <td class="p-3 text-gray-500 font-mono">
                             {% if record.employee %}
                                 {{ record.employee.employee_code|default:"-" }}
@@ -87,7 +85,6 @@
                             {% endif %}
                         </td>
 
-                        <!-- Idara (Department) -->
                         <td class="p-3 text-gray-500">
                             {% if record.employee %}
                                 {{ record.employee.department.name|default:record.employee.department|default:"-" }}
@@ -98,12 +95,10 @@
                             {% endif %}
                         </td>
 
-                        <!-- Check-In Time -->
                         <td class="p-3 text-gray-800 font-semibold text-green-600">
                             {{ record.check_in_time|time:"H:i:s A" }}
                         </td>
 
-                        <!-- Check-Out Time -->
                         <td class="p-3 text-gray-800 font-semibold text-blue-600">
                             {% if record.check_out_time %}
                                 {{ record.check_out_time|time:"H:i:s A" }}
@@ -112,18 +107,17 @@
                             {% endif %}
                         </td>
 
-                        <!-- Status Badge -->
+                        <!-- Status Badge na Upper Filter -->
                         <td class="p-3">
-                            {% if record.status == 'PRESENT' %}
+                            {% if record.status|upper == 'PRESENT' %}
                                 <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">PRESENT</span>
-                            {% elif record.status == 'LATE' %}
+                            {% elif record.status|upper == 'LATE' %}
                                 <span class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">LATE</span>
                             {% else %}
                                 <span class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">{{ record.status }}</span>
                             {% endif %}
                         </td>
 
-                        <!-- Source -->
                         <td class="p-3 text-gray-500 text-xs">Biometric / API</td>
                     </tr>
                     {% empty %}
@@ -166,7 +160,7 @@
                         </td>
                         <td class="p-3 text-gray-500 font-mono">{{ emp.employee_code|default:"-" }}</td>
                         <td class="p-3 text-gray-500">{{ emp.department.name|default:emp.department|default:"-" }}</td>
-                        <td class="p-3 text-gray-500">{{ emp.job_title|default:"Mfanyakazi" }}</td>
+                        <td class="p-3 text-gray-500">{{ emp.role|default:emp.job_title|default:"Mfanyakazi" }}</td>
                         <td class="p-3 text-gray-500">{{ emp.phone_number|default:"-" }}</td>
                     </tr>
                     {% empty %}

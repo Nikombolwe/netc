@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Smart Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- HEADER -->
+        <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Dashboard ya Mfanyakazi</h1>
+                <p class="text-slate-500 text-sm">Karibu, {{ request.user.get_full_name|default:request.user.username }}</p>
+            </div>
+            <a href="{% url 'logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Ondoka</a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- CARDS ZA MASALIO NA TAKWIMU -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Salio la Likizo -->
+            <div class="bg-blue-600 text-white p-5 rounded-xl shadow-sm">
+                <p class="text-blue-100 text-sm font-medium">Siku za Likizo Zilizobaki</p>
+                <h2 class="text-3xl font-bold mt-1">{{ balance.annual_leave_days|default:"0" }} Siku</h2>
+            </div>
+            <!-- Ruhusa za Dharura -->
+            <div class="bg-amber-500 text-white p-5 rounded-xl shadow-sm">
+                <p class="text-amber-100 text-sm font-medium">Ruhusa za Dharura Zilizobaki</p>
+                <h2 class="text-3xl font-bold mt-1">{{ balance.emergency_leave_count|default:"0" }} Mara</h2>
+            </div>
+            <!-- Wahi Kazini -->
+            <div class="bg-emerald-600 text-white p-5 rounded-xl shadow-sm">
+                <p class="text-emerald-100 text-sm font-medium">Kufika kwa Wakati (Mwezi Huu)</p>
+                <h2 class="text-3xl font-bold mt-1">{{ on_time_count|default:"0" }} Mara</h2>
+            </div>
+            <!-- Kuchelewa -->
+            <div class="bg-rose-600 text-white p-5 rounded-xl shadow-sm">
+                <p class="text-rose-100 text-sm font-medium">Kuchelewa (Mwezi Huu)</p>
+                <h2 class="text-3xl font-bold mt-1">{{ late_count|default:"0" }} Mara</h2>
+            </div>
+        </div>
+
+        <!-- SEHEMU YA MAOMBI NA MUHTASARI -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- FORMU YA KUOMBA RUHUSA / LIKIZO -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Omba Ruhusa / Likizo</h3>
+                <form method="POST" action="{% url 'employee_dashboard' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Aina ya Ombi *</label>
+                        <select name="request_type" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="LATE_ARRIVAL">Kuchelewa Kuingia Kazini</option>
+                            <option value="ABSENCE">Ruhusa ya Kutohudhuria Kazini</option>
+                            <option value="SPECIAL_DUTY">Kazi Maalumu Nje ya Ofisi</option>
+                            <option value="ANNUAL_LEAVE">Likizo ya Mwaka</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tarehe ya Anza *</label>
+                            <input type="date" name="start_date" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tarehe ya Mwisho</label>
+                            <input type="date" name="end_date" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Sababu *</label>
+                        <textarea name="reason" rows="3" required placeholder="Eleza sababu ya ombi lako..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm shadow">
+                        Tuma Ombi
+                    </button>
+                </form>
+            </div>
+
+            <!-- MUHTASARI WA MAOMBI & HISTORIA -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2 space-y-6">
+                
+                <h3 class="text-lg font-bold text-slate-800">Muhtasari wa Maombi Yako</h3>
+                
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="p-3 bg-slate-100 rounded-lg">
+                        <p class="text-xs text-slate-500">Kuchelewa</p>
+                        <p class="text-xl font-bold text-slate-700">{{ req_late_count|default:"0" }}</p>
+                    </div>
+                    <div class="p-3 bg-slate-100 rounded-lg">
+                        <p class="text-xs text-slate-500">Kutohudhuria</p>
+                        <p class="text-xl font-bold text-slate-700">{{ req_absence_count|default:"0" }}</p>
+                    </div>
+                    <div class="p-3 bg-slate-100 rounded-lg">
+                        <p class="text-xs text-slate-500">Likizo</p>
+                        <p class="text-xl font-bold text-slate-700">{{ req_leave_count|default:"0" }}</p>
+                    </div>
+                </div>
+
+                <!-- HISTORIA YA MAOMBI -->
+                <h4 class="font-bold text-slate-700 pt-2">Maombi ya Hivi Karibuni</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                            <tr>
+                                <th class="py-2.5 px-3">Aina</th>
+                                <th class="py-2.5 px-3">Tarehe</th>
+                                <th class="py-2.5 px-3">Hali</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in recent_requests %}
+                            <tr class="border-b hover:bg-slate-50 transition">
+                                <td class="py-2.5 px-3 font-medium text-slate-800">
+                                    {{ req.get_request_type_display|default:req.request_type }}
+                                </td>
+                                <td class="py-2.5 px-3">
+                                    {{ req.start_date|date:"d M Y" }}
+                                    {% if req.end_date and req.end_date != req.start_date %}
+                                        - {{ req.end_date|date:"d M Y" }}
+                                    {% endif %}
+                                </td>
+                                <td class="py-2.5 px-3">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold inline-block
+                                        {% if req.status == 'APPROVED' %}bg-green-100 text-green-700
+                                        {% elif req.status == 'REJECTED' %}bg-red-100 text-red-700
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ req.get_status_display|default:req.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="py-6 text-center text-slate-400">Hujatuma ombi lolote bado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
