@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* RESET & BASE STYLES */
+    .dashboard-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        padding: 24px;
+        min-height: 100vh;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: #ffffff;
+        padding: 20px 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .header-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .director-highlight {
+        color: #4f46e5;
+    }
+
+    .dept-badge {
+        background-color: #e0e7ff;
+        color: #4338ca;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    /* LOGOUT BUTTON (STYLED AS SUBMIT BUTTON) */
+    .btn-logout {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-logout:hover {
+        background-color: #dc2626;
+        color: #ffffff;
+    }
+
+    /* STATS GRID */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    .stat-card .label {
+        font-size: 14px;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .stat-card.success .value { color: #16a34a; }
+    .stat-card.warning .value { color: #d97706; }
+    .stat-card.info .value { color: #0284c7; }
+    .stat-card.primary .value { color: #4f46e5; }
+
+    /* LAYOUT GRID */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 24px;
+    }
+
+    @media (max-width: 992px) {
+        .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* CARD STYLES */
+    .panel-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    /* FORMS & INPUTS */
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 6px;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 14px;
+        background-color: #f8fafc;
+        box-sizing: border-box;
+    }
+
+    .form-control-custom:focus {
+        outline: none;
+        border-color: #4f46e5;
+        background-color: #ffffff;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        background-color: #4f46e5;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+    }
+
+    .btn-submit:hover {
+        background-color: #4338ca;
+    }
+
+    /* TABLES */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .custom-table td {
+        padding: 14px 16px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 14px;
+    }
+
+    /* ACTION CARDS */
+    .request-item {
+        background: #fff8f1;
+        border: 1px solid #fde68a;
+        border-left: 4px solid #f59e0b;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+
+    .action-btns {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .btn-approve {
+        background-color: #16a34a;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+    .btn-approve:hover { opacity: 0.9; color: white; }
+
+    .btn-reject {
+        background-color: #ef4444;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        transition: opacity 0.2s;
+    }
+    .btn-reject:hover { opacity: 0.9; color: white; }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .badge-warning { background-color: #fef3c7; color: #b45309; }
+    .badge-success { background-color: #dcfce7; color: #15803d; }
+    .badge-danger { background-color: #fee2e2; color: #b91c1c; }
+</style>
+
+<div class="dashboard-container">
+    
+    <!-- HEADER -->
+    <div class="header-section">
+        <div>
+            <h1 class="header-title">
+                Karibu: 
+                <span class="director-highlight">
+                    {% if director %}{{ director.full_name }}{% else %}{{ director_name }}{% endif %}
+                </span>
+            </h1>
+            <p style="margin: 6px 0 0 0; color: #64748b;">
+                Idara: <span class="dept-badge">{{ dept_name }}</span>
+            </p>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="font-size: 14px; color: #64748b; font-weight: 500;">
+                Leo ni: <strong>{% now "j F Y" %}</strong>
+            </div>
+            
+            <!-- LOGOUT FORM ILIYOSAHIHISHWA KUWA POST -->
+            <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Toka (Logout)
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 1. STATS CARDS -->
+    <div class="stats-grid">
+        <div class="stat-card success">
+            <div class="label">Mahudhurio Safi</div>
+            <div class="value">{{ on_time_count }}</div>
+            <div style="font-size: 12px; color: #94a3b8;">Mwezi Huu</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="label">Kuchelewa</div>
+            <div class="value">{{ late_count }}</div>
+            <div style="font-size: 12px; color: #94a3b8;">Mwezi Huu</div>
+        </div>
+        <div class="stat-card info">
+            <div class="label">Salio la Likizo</div>
+            <div class="value">{{ balance.remaining_days|default:"0" }}</div>
+            <div style="font-size: 12px; color: #94a3b8;">Siku Zilizobaki</div>
+        </div>
+        <div class="stat-card primary">
+            <div class="label">Wafanyakazi Idarani</div>
+            <div class="value">{{ department_employees.count }}</div>
+            <div style="font-size: 12px; color: #94a3b8;">Jumla ya Idara</div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN CONTENT GRID -->
+    <div class="main-grid">
+        
+        <!-- LEFT COLUMN -->
+        <div>
+            <!-- Form Card -->
+            <div class="panel-card">
+                <div class="panel-title">Omba Ruhusa (Mkurugenzi)</div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Aina ya Ombi</label>
+                        <select name="request_type" class="form-control-custom" required>
+                            <option value="ANNUAL_LEAVE">Likizo ya Mwaka</option>
+                            <option value="SICK_LEAVE">Ruhusa ya Ugonjwa</option>
+                            <option value="EMERGENCY">Ruhusa ya Dharura</option>
+                            <option value="LATE_ARRIVAL">Kuchelewa Kufika</option>
+                            <option value="ABSENCE">Ruhusa ya Siku</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Kuanzia Tarehe</label>
+                            <input type="date" name="start_date" class="form-control-custom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hadi Tarehe</label>
+                            <input type="date" name="end_date" class="form-control-custom">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sababu ya Ombi</label>
+                        <textarea name="reason" class="form-control-custom" rows="3" placeholder="Andika sababu yako..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Tuma Ombi kwa Maofisa</button>
+                </form>
+            </div>
+
+            <!-- Recent Personal Requests -->
+            <div class="panel-card">
+                <div class="panel-title">Maombi Yako Binafsi</div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Aina</th>
+                            <th>Tarehe</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in my_requests %}
+                        <tr>
+                            <td><strong>{{ req.get_request_type_display|default:req.request_type }}</strong></td>
+                            <td>{{ req.start_date }}</td>
+                            <td>
+                                {% if req.status == 'PEND_OFF' %}
+                                    <span class="badge-status badge-warning">Maofisa</span>
+                                {% elif req.status == 'APPROVED' %}
+                                    <span class="badge-status badge-success">Imekubaliwa</span>
+                                {% elif req.status == 'REJECTED' %}
+                                    <span class="badge-status badge-danger">Imekataliwa</span>
+                                {% else %}
+                                    <span class="badge-status">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Hujaomba ruhusa yoyote.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div>
+            <!-- Pending Department Requests -->
+            <div class="panel-card">
+                <div class="panel-title">Maombi ya Wafanyakazi Wako</div>
+                {% if pending_requests %}
+                    {% for req in pending_requests %}
+                    <div class="request-item">
+                        <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                            <span>{{ req.user.employee_profile.full_name|default:req.user.get_full_name|default:req.user.username }}</span>
+                            <span style="font-size: 12px; color: #64748b;">{{ req.start_date }}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #475569; margin: 6px 0;"><strong>Sababu:</strong> {{ req.reason }}</div>
+                        <div class="action-btns">
+                            <a href="{% url 'director_process_request' req.id 'approve' %}" class="btn-approve">Kubali & Tuma</a>
+                            <a href="{% url 'director_process_request' req.id 'reject' %}" class="btn-reject">Kataa</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: #94a3b8; padding: 30px;">
+                        Hakuna ombi jipya linalosubiri idhini yako.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Staff List -->
+            <div class="panel-card">
+                <div class="panel-title">Wafanyakazi wa Idara Hii</div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Jina</th>
+                            <th>Cheo</th>
+                            <th>Simu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in department_employees %}
+                        <tr>
+                            <td><strong>{{ emp.full_name }}</strong></td>
+                            <td>{{ emp.job_title|default:"Mfanyakazi" }}</td>
+                            <td>{{ emp.phone_number|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">Hakuna mfanyakazi mwingine aliyesajiliwa.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

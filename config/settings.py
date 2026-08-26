@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'warnings',
     'reports',
     'dashboard',
+    'communications',
 ]
 
 # ----------------------------------------------------------------------
