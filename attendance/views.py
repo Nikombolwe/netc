@@ -137,17 +137,32 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
         ).count()
 
         # A. SMS na Email kwa Mfanyakazi Mwenyewe (Iwe ni Director au Mfanyakazi wa kawaida)
-        emp_msg = f"Habari {full_name}, umeingia kazini saa {time_str} (Umechelewa). Kumbuka muda rasmi wa kufika ni 08:00 AM."
+        emp_msg = f"Habari {full_name}, tunatumaini unaendelea vizuri. Leo umeingia kazini saa {time_str}, baada ya muda rasmi wa kufika ambao ni 08:00 AM. Tunakukumbusha kwa upendo umuhimu wa kuwahi kazini na kutunza muda. Tunaamini utaendelea kujitahidi kufanya vizuri katika utekelezaji wa majukumu yako. Bwana akubariki katika kazi zako. Maranatha!"
+
         send_sms_notification(emp_phone, emp_msg)
 
-        emp_email_subject = f"TAARIFA YA KUCHELEWA - {today.strftime('%d/%m/%Y')}"
+        emp_email_subject = f"TAARIFA YA KUCHELEWA KAZINI - {today.strftime('%d/%m/%Y')}"
+
         emp_email_body = (
-            f"Habari {full_name},\n\n"
-            f"Mfumo unakutaarifu kuwa umeingia kazini leo tarehe {today.strftime('%d-%m-%Y')} saa {time_str}.\n"
-            f"Hii ni mara yako ya ({late_count}) kuchelewa katika mwezi huu wa {today.strftime('%B %Y')}.\n\n"
-            f"Tafadhali zingatia kuwahi kazini kabla ya saa 08:00 AM.\n\n"
-            f"NETC HQ - Human Resources Department"
-        )
+    f"Habari {full_name},\n\n"
+
+    f"Unataarifiwa kuwa leo tarehe {today.strftime('%d-%m-%Y')} "
+    f"umeingia kazini saa {time_str}, baada ya muda rasmi wa kuanza kazi "
+    f"ambao ni saa 08:00 AM.\n\n"
+
+    f"Kumbukumbu za mfumo wa mahudhurio zinaonyesha kuwa hii ni mara yako "
+    f"ya ({late_count}) kuchelewa katika mwezi wa {today.strftime('%B %Y')}.\n\n"
+
+    f"Unakumbushwa kuzingatia muda wa kazi na kuhakikisha unafika kazini "
+    f"kwa wakati. Kuchelewa mara kwa mara kunaathiri utekelezaji wa majukumu "
+    f"na ufanisi wa kazi za taasisi.\n\n"
+
+    f"Tafadhali chukua hatua stahiki kuhakikisha hali hii haijirudii.\n\n"
+
+    f"Wako katika utumishi,\n"
+    f"Katibu wa Conference\n"
+    f"NETC HQ"
+)
         send_email_notification(emp_email_subject, emp_email_body, [emp_email])
 
         # B. SMS na Email kwa Director / Mkuu wa Idara
@@ -179,7 +194,7 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
 
         # HAKIKISHA: Director yupo NA Mfanyakazi anayechelewa SIO huyo Director mwenyewe!
         if director_obj and director_obj.pk != employee.pk:
-            dir_msg = f"TAARIFA: Mfanyakazi {full_name} wa idara yako amechelewa leo ({time_str}). Hii ni mara ya {late_count} mwezi huu."
+            dir_msg = f"Taarifa ya Mahudhurio: Mfanyakazi {full_name} wa idara yako amechelewa kufika kazini leo na aliingia saa {time_str}. Hii ni mara yake ya {late_count} kuchelewa katika mwezi huu. Tafadhali pokea taarifa hii kwa ufuatiliaji. - NETC Attendance System"
             
             if director_phone:
                 send_sms_notification(director_phone, dir_msg)
@@ -187,11 +202,21 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
             if director_email:
                 dir_email_subject = f"TAARIFA YA IDARA: Kuchelewa kwa {full_name}"
                 dir_email_body = (
-                    f"Habari Mkuu wa Idara,\n\n"
-                    f"Tafadhali pokea taarifa kuwa mfanyakazi {full_name} wa idara yako amechelewa kufika kazini leo ({today.strftime('%d-%m-%Y')}) saa {time_str}.\n"
-                    f"Jumla ya mara alizochelewa mwezi huu wa {today.strftime('%B %Y')} ni: Mara {late_count}.\n\n"
-                    f"Asante,\nNETC Attendance System."
-                )
+    f"Habari Mkuu wa Idara,\n\n"
+
+    f"Taarifa za mahudhurio zinaonyesha kuwa mfanyakazi {full_name} wa idara yako "
+    f"amechelewa kufika kazini leo, tarehe {today.strftime('%d-%m-%Y')}, "
+    f"na aliingia saa {time_str}.\n\n"
+
+    f"Hii ni mara yake ya {late_count} kuchelewa katika mwezi wa "
+    f"{today.strftime('%B %Y')}.\n\n"
+
+    f"Taarifa hii imetumwa kwa ajili ya taarifa na ufuatiliaji wa mahudhurio "
+    f"katika idara yako.\n\n"
+
+    f"---\n"
+    f"NETC Attendance System\n"
+)
                 send_email_notification(dir_email_subject, dir_email_body, [director_email])
         elif not director_obj:
             print(f"[Alert System]: Mfanyakazi {full_name} idara yake haina Director au namba/email yake haijajazwa vizuri kwenye mfumo!")
@@ -218,12 +243,27 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
         # D. MARA YA 3 AU ZAIDI: Barua ya Onyo (Email kwa Mfanyakazi)
         if late_count >= 3:
             warning_email_body = (
-                f"Ndugu {full_name},\n\n"
-                f"BARUA YA ONYO: Mfumo umeratibu kuwa umechelewa kufika kazini mara {late_count} katika mwezi huu wa {today.strftime('%B %Y')}.\n"
-                f"Kuchelewa mara kwa mara ni kinyume cha kanuni za nidhamu na utendaji kazi wa NETC HQ.\n\n"
-                f"Tafadhali zingatia kuwahi kazini ili kuepuka hatua zaidi za kinidhamu.\n\n"
-                f"Wako,\nUongozi wa Rasilimali Watu (HR)."
-            )
+    f"Ndugu {full_name},\n\n"
+
+    f"TAARIFA YA ONYO KUHUSU KUCHELEWA KAZINI\n\n"
+
+    f"Rekodi za mfumo wa mahudhurio zinaonyesha kuwa umechelewa kufika kazini "
+    f"mara {late_count} katika mwezi wa {today.strftime('%B %Y')}.\n\n"
+
+    f"Tunapenda kukukumbusha umuhimu wa kutunza muda na kufika kazini kwa wakati, "
+    f"ili kuhakikisha utekelezaji wa majukumu unaendelea vizuri.\n\n"
+
+    f"Tafadhali zingatia zaidi muda wa kufika kazini na jitahidi kuhakikisha "
+    f"hali ya kuchelewa haijirudii mara kwa mara.\n\n"
+
+    f"Tunaamini utazingatia taarifa hii na kufanya maboresho katika utunzaji wa muda.\n\n"
+
+    f"Bwana akubariki katika utekelezaji wa majukumu yako.\n"
+    f"Maranatha!\n\n"
+
+    f"NETC HQ\n"
+    f"Ujumbe huu umetumwa kupitia Mfumo wa Mahudhurio."
+)
             send_email_notification(
                 subject="BARUA YA ONYO - KUCHELEWA KAZINI",
                 message=warning_email_body,

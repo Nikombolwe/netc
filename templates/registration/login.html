@@ -5,61 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ingia kwenye Mfumo - Smart Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-emperor: #4b207f;
+            --secondary-denim: #2f557f;
+            --accent-ming: #3e8391;
+            --accent-campfire: #e36520;
+            --accent-green: #448d21;
+        }
+        .focus-custom:focus {
+            outline: none;
+            border-color: var(--primary-emperor);
+            box-shadow: 0 0 0 3px rgba(75, 32, 127, 0.12);
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+            transition: all 0.25s ease;
+        }
+        .btn-gradient:hover {
+            opacity: 0.93;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(75, 32, 127, 0.25);
+        }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-200">
+    <!-- SPLIT CONTAINER (KAMA PICHANI) -->
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 grid grid-cols-1 md:grid-cols-2">
         
-        <!-- LOGO & HEADER -->
-        <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-slate-800">Smart Attendance System</h2>
-            <p class="text-sm text-slate-500">Ingiza taarifa zako ili kuingia kwenye mfumo</p>
+        <!-- LEFT BANNER SIDE (KAMA PICHANI) -->
+        <div class="bg-gradient-to-br from-[#4b207f] via-[#2f557f] to-[#3e8391] p-8 md:p-10 flex flex-col justify-between text-white relative">
+            <!-- Decorative overlay -->
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            
+            <!-- Logo / Brand Header -->
+            <div class="relative z-10 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 font-bold text-sm tracking-wider">
+                    SA
+                </div>
+                <span class="font-bold tracking-widest text-xs uppercase text-slate-200">Smart Attendance</span>
+            </div>
+
+            <!-- Welcome Text (Kama Picha) -->
+            <div class="relative z-10 my-auto py-8">
+                <h2 class="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">Karibu,<br>Karibu tena!</h2>
+                <p class="text-slate-200 text-sm leading-relaxed">
+                    Ingiza taarifa zako ili kuingia kwenye mfumo wa usimamizi wa mahudhurio kwa urahisi na usalama.
+                </p>
+            </div>
+
+            <!-- Footer note inside banner -->
+            <div class="relative z-10 text-xs text-slate-300 font-medium">
+                &copy; 2026 Tech Shine TZ
+            </div>
         </div>
 
-        <!-- MESSAGES / ERRORS -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="mb-4 p-3 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-green-100 text-green-700 border border-green-200{% endif %}">
-                    {{ message }}
+        <!-- RIGHT FORM SIDE -->
+        <div class="p-8 md:p-10 flex flex-col justify-center bg-white">
+            
+            <!-- HEADER -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Ingia Mfumoni</h2>
+                <p class="text-sm text-slate-500 mt-1">Jaza fomu hapa chini kuendelea</p>
+            </div>
+
+            <!-- MESSAGES / ERRORS -->
+            {% if messages %}
+                <div class="space-y-2 mb-4">
+                    {% for message in messages %}
+                        <div class="p-3 rounded-xl text-xs font-medium {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
-        {% endif %}
+            {% endif %}
 
-        <!-- LOGIN FORM -->
-        <form method="POST" action="{% url 'login' %}" class="space-y-4">
-            {% csrf_token %}
+            <!-- LOGIN FORM (FIELDS ZILE ZILE) -->
+            <form method="POST" action="{% url 'login' %}" class="space-y-4">
+                {% csrf_token %}
 
-            <!-- AINA YA MTUMIAJI (ROLE DROPDOWN) -->
-            <div>
-                <label for="role" class="block text-sm font-semibold text-slate-700 mb-1">Aina ya Akaunti (Role) *</label>
-                <select id="role" name="role" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
-                    <option value="" disabled selected>-- Chagua Aina ya Mtumiaji --</option>
-                    <option value="employee">Employee (Mfanyakazi Wa Kawaida)</option>
-                    <option value="director">Director (Mkurugenzi wa Idara)</option>
-                    <option value="officer">Officer (Mwenyekiti / Katibu / Mhazini)</option>
-                </select>
-            </div>
+                <!-- AINA YA MTUMIAJI (ROLE DROPDOWN) -->
+                <div>
+                    <label for="role" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Aina ya Akaunti (Role) *</label>
+                    <select id="role" name="role" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus-custom transition">
+                        <option value="" disabled selected>-- Chagua Aina ya Mtumiaji --</option>
+                        <option value="employee">Employee (Mfanyakazi Wa Kawaida)</option>
+                        <option value="director">Director (Mkurugenzi wa Idara)</option>
+                        <option value="officer">Officer (Mwenyekiti / Katibu / Mhazini)</option>
+                    </select>
+                </div>
 
-            <!-- USERNAME -->
-            <div>
-                <label for="username" class="block text-sm font-semibold text-slate-700 mb-1">Username (Jina la Mtumiaji) *</label>
-                <input type="text" id="username" name="username" autocomplete="username" required placeholder="Ingiza username" 
-                       class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
-            </div>
+                <!-- USERNAME -->
+                <div>
+                    <label for="username" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Username (Jina la Mtumiaji) *</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required placeholder="Ingiza username" 
+                           class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus-custom transition">
+                </div>
 
-            <!-- PASSWORD -->
-            <div>
-                <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">Neno la Siri (Password) *</label>
-                <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••" 
-                       class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800">
-            </div>
+                <!-- PASSWORD -->
+                <div>
+                    <label for="password" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Neno la Siri (Password) *</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••" 
+                           class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus-custom transition">
+                </div>
 
-            <!-- BUTTON -->
-            <button type="submit" 
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition duration-200">
-                Ingia Mfumoni (Login)
-            </button>
-        </form>
+                <!-- BUTTON -->
+                <button type="submit" 
+                        class="w-full btn-gradient text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm mt-2">
+                    Ingia Mfumoni (Login)
+                </button>
+            </form>
+
+        </div>
 
     </div>
 

@@ -5,22 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Dashboard - Smart Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-emperor: #4b207f;
+            --secondary-denim: #2f557f;
+            --accent-ming: #3e8391;
+        }
+        .brand-gradient {
+            background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+        }
+        .custom-card-hover {
+            transition: all 0.25s ease;
+        }
+        .custom-card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(75, 32, 127, 0.08);
+        }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+<body class="bg-slate-100/70 min-h-screen p-4 md:p-8 font-sans">
 
     <div class="max-w-7xl mx-auto space-y-6">
         
         <!-- HEADER -->
-        <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">Dashboard ya Mfanyakazi</h1>
-                <p class="text-slate-500 text-sm">Karibu, {{ request.user.get_full_name|default:request.user.username }}</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#4b207f] animate-pulse"></span>
+                    <span class="text-xs font-bold text-[#4b207f] uppercase tracking-wider">Mfanyakazi Portal</span>
+                </div>
+                <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-800 tracking-tight">Dashboard ya Mfanyakazi</h1>
+                <p class="text-slate-500 text-sm mt-0.5">Karibu, <span class="font-semibold text-slate-700">{{ request.user.get_full_name|default:request.user.username }}</span></p>
             </div>
             
             <!-- LOGOUT FORM ILIYOSAHIHISHWA KUWA POST -->
             <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
                 {% csrf_token %}
-                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer flex items-center gap-1.5">
+                <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white px-4.5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center gap-2 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
@@ -29,49 +50,66 @@
             </form>
         </div>
 
+        <!-- NOTIFICATIONS -->
         {% if messages %}
-            {% for message in messages %}
-                <div class="p-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
+            <div class="space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl text-sm font-medium shadow-sm {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %} flex items-center gap-2">
+                        <span>{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+                        <div>{{ message }}</div>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
 
         <!-- CARDS ZA MASALIO NA TAKWIMU -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
             <!-- Salio la Likizo -->
-            <div class="bg-blue-600 text-white p-5 rounded-xl shadow-sm">
-                <p class="text-blue-100 text-sm font-medium">Siku za Likizo Zilizobaki</p>
-                <h2 class="text-3xl font-bold mt-1">{{ balance.annual_leave_days|default:"0" }} Siku</h2>
+            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-blue-600"></div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Siku za Likizo Zilizobaki</p>
+                <h2 class="text-3xl font-extrabold text-blue-600">{{ balance.annual_leave_days|default:"0" }} <span class="text-lg font-semibold text-slate-600">Siku</span></h2>
             </div>
+
             <!-- Ruhusa za Dharura -->
-            <div class="bg-amber-500 text-white p-5 rounded-xl shadow-sm">
-                <p class="text-amber-100 text-sm font-medium">Ruhusa za Dharura Zilizobaki</p>
-                <h2 class="text-3xl font-bold mt-1">{{ balance.emergency_leave_count|default:"0" }} Mara</h2>
+            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ruhusa za Dharura Zilizobaki</p>
+                <h2 class="text-3xl font-extrabold text-amber-600">{{ balance.emergency_leave_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
             </div>
+
             <!-- Wahi Kazini -->
-            <div class="bg-emerald-600 text-white p-5 rounded-xl shadow-sm">
-                <p class="text-emerald-100 text-sm font-medium">Kufika kwa Wakati (Mwezi Huu)</p>
-                <h2 class="text-3xl font-bold mt-1">{{ on_time_count|default:"0" }} Mara</h2>
+            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600"></div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kufika kwa Wakati (Mwezi Huu)</p>
+                <h2 class="text-3xl font-extrabold text-emerald-600">{{ on_time_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
             </div>
+
             <!-- Kuchelewa -->
-            <div class="bg-rose-600 text-white p-5 rounded-xl shadow-sm">
-                <p class="text-rose-100 text-sm font-medium">Kuchelewa (Mwezi Huu)</p>
-                <h2 class="text-3xl font-bold mt-1">{{ late_count|default:"0" }} Mara</h2>
+            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-rose-600"></div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kuchelewa (Mwezi Huu)</p>
+                <h2 class="text-3xl font-extrabold text-rose-600">{{ late_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
             </div>
+
         </div>
 
         <!-- SEHEMU YA MAOMBI NA MUHTASARI -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- FORMU YA KUOMBA RUHUSA / LIKIZO -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Omba Ruhusa / Likizo</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-1 h-fit">
+                <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-100">
+                    <span class="p-2 rounded-xl bg-purple-50 text-[#4b207f]">📝</span>
+                    <h3 class="text-lg font-bold text-slate-800">Omba Ruhusa / Likizo</h3>
+                </div>
+
                 <form method="POST" action="{% url 'employee_dashboard' %}" class="space-y-4">
                     {% csrf_token %}
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Aina ya Ombi *</label>
-                        <select name="request_type" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Aina ya Ombi *</label>
+                        <select name="request_type" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition font-medium text-slate-700">
                             <option value="LATE_ARRIVAL">Kuchelewa Kuingia Kazini</option>
                             <option value="ABSENCE">Ruhusa ya Kutohudhuria Kazini</option>
                             <option value="SPECIAL_DUTY">Kazi Maalumu Nje ya Ofisi</option>
@@ -79,87 +117,95 @@
                         </select>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tarehe ya Anza *</label>
-                            <input type="date" name="start_date" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Anza *</label>
+                            <input type="date" name="start_date" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Tarehe ya Mwisho</label>
-                            <input type="date" name="end_date" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Mwisho</label>
+                            <input type="date" name="end_date" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Sababu *</label>
-                        <textarea name="reason" rows="3" required placeholder="Eleza sababu ya ombi lako..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sababu *</label>
+                        <textarea name="reason" rows="3" required placeholder="Eleza sababu ya ombi lako..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700"></textarea>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm shadow">
-                        Tuma Ombi
+                    <button type="submit" class="w-full brand-gradient hover:opacity-95 text-white font-semibold py-3.5 rounded-xl transition text-sm shadow-md cursor-pointer flex items-center justify-center gap-2">
+                        <span>Tuma Ombi</span>
                     </button>
                 </form>
             </div>
 
             <!-- MUHTASARI WA MAOMBI & HISTORIA -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2 space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-2 space-y-6">
                 
-                <h3 class="text-lg font-bold text-slate-800">Muhtasari wa Maombi Yako</h3>
-                
-                <div class="grid grid-cols-3 gap-4 text-center">
-                    <div class="p-3 bg-slate-100 rounded-lg">
-                        <p class="text-xs text-slate-500">Kuchelewa</p>
-                        <p class="text-xl font-bold text-slate-700">{{ req_late_count|default:"0" }}</p>
-                    </div>
-                    <div class="p-3 bg-slate-100 rounded-lg">
-                        <p class="text-xs text-slate-500">Kutohudhuria</p>
-                        <p class="text-xl font-bold text-slate-700">{{ req_absence_count|default:"0" }}</p>
-                    </div>
-                    <div class="p-3 bg-slate-100 rounded-lg">
-                        <p class="text-xs text-slate-500">Likizo</p>
-                        <p class="text-xl font-bold text-slate-700">{{ req_leave_count|default:"0" }}</p>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Muhtasari wa Maombi Yako</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kuchelewa</p>
+                            <p class="text-2xl font-extrabold text-slate-700">{{ req_late_count|default:"0" }}</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kutohudhuria</p>
+                            <p class="text-2xl font-extrabold text-slate-700">{{ req_absence_count|default:"0" }}</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Likizo</p>
+                            <p class="text-2xl font-extrabold text-slate-700">{{ req_leave_count|default:"0" }}</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- HISTORIA YA MAOMBI -->
-                <h4 class="font-bold text-slate-700 pt-2">Maombi ya Hivi Karibuni</h4>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-slate-600">
-                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                            <tr>
-                                <th class="py-2.5 px-3">Aina</th>
-                                <th class="py-2.5 px-3">Tarehe</th>
-                                <th class="py-2.5 px-3">Hali</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for req in recent_requests %}
-                            <tr class="border-b hover:bg-slate-50 transition">
-                                <td class="py-2.5 px-3 font-medium text-slate-800">
-                                    {{ req.get_request_type_display|default:req.request_type }}
-                                </td>
-                                <td class="py-2.5 px-3">
-                                    {{ req.start_date|date:"d M Y" }}
-                                    {% if req.end_date and req.end_date != req.start_date %}
-                                        - {{ req.end_date|date:"d M Y" }}
-                                    {% endif %}
-                                </td>
-                                <td class="py-2.5 px-3">
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold inline-block
-                                        {% if req.status == 'APPROVED' %}bg-green-100 text-green-700
-                                        {% elif req.status == 'REJECTED' %}bg-red-100 text-red-700
-                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                        {{ req.get_status_display|default:req.status }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="py-6 text-center text-slate-400">Hujatuma ombi lolote bado.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div>
+                    <h4 class="font-bold text-slate-800 mb-3 text-base">Maombi ya Hivi Karibuni</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-600 border-collapse">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-50/80 tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4 rounded-l-xl">Aina</th>
+                                    <th class="py-3 px-4">Tarehe</th>
+                                    <th class="py-3 px-4 rounded-r-xl">Hali</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for req in recent_requests %}
+                                <tr class="hover:bg-slate-50/70 transition">
+                                    <td class="py-3.5 px-4 font-semibold text-slate-800">
+                                        {{ req.get_request_type_display|default:req.request_type }}
+                                    </td>
+                                    <td class="py-3.5 px-4 text-slate-600 text-xs font-medium">
+                                        {{ req.start_date|date:"d M Y" }}
+                                        {% if req.end_date and req.end_date != req.start_date %}
+                                            - {{ req.end_date|date:"d M Y" }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-3 py-1 rounded-lg text-xs font-bold inline-block
+                                            {% if req.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                                            {% elif req.status == 'REJECTED' %}bg-rose-100 text-rose-800
+                                            {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                            {{ req.get_status_display|default:req.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-slate-400 text-sm">
+                                        <div class="flex flex-col items-center justify-center space-y-1">
+                                            <span>📭</span>
+                                            <p>Hujatuma ombi lolote bado.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>

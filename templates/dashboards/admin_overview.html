@@ -3,69 +3,132 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    :root {
+        --primary-emperor: #4b207f;
+        --secondary-denim: #2f557f;
+        --accent-ming: #3e8391;
+    }
+    .brand-gradient {
+        background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+    }
+    .dashboard-card {
+        transition: all 0.25s ease;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(75, 32, 127, 0.08), 0 8px 10px -6px rgba(75, 32, 127, 0.08);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="p-6 bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+<div class="p-6 md:p-8 bg-slate-100/60 min-h-screen">
+    
+    <!-- HEADER -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p class="text-sm text-gray-500">Muhtasari wa mahudhurio ya leo ({% now "j F, Y" %})</p>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#4b207f] animate-pulse"></span>
+                <span class="text-xs font-bold text-[#4b207f] uppercase tracking-wider">Admin Panel</span>
+            </div>
+            <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-800 tracking-tight">Admin Dashboard</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Muhtasari wa mahudhurio ya leo (<span class="font-semibold text-slate-700">{% now "j F, Y" %}</span>)</p>
         </div>
-        <div class="flex space-x-3">
-            <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 border border-slate-200">
                 🔄 Refresh
             </button>
-            <a href="{% url 'add_user' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">+ Ongeza Mfanyakazi</a>
-            <a href="#" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Manual Entry</a>
+            <a href="{% url 'add_user' %}" class="brand-gradient text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:opacity-95 transition flex items-center gap-1.5">
+                + Ongeza Mfanyakazi
+            </a>
+            <a href="#" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition">
+                Manual Entry
+            </a>
         </div>
     </div>
 
-    <!-- KPI Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <div class="dashboard-card cursor-pointer hover:shadow-md transition bg-white p-4 rounded-xl border border-gray-100" onclick="toggleEmployeesTable()">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Wafanyakazi Wote</p>
-            <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ total_employees|default:0 }}</h3>
+    <!-- KPI SUMMARY CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        
+        <!-- Wafanyakazi Wote -->
+        <div class="dashboard-card cursor-pointer bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group" onclick="toggleEmployeesTable()">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-[#4b207f]"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Wafanyakazi Wote</p>
+            <div class="flex items-baseline justify-between">
+                <h3 class="text-3xl font-extrabold text-slate-800">{{ total_employees|default:0 }}</h3>
+                <span class="text-xs font-medium text-[#4b207f] bg-purple-50 px-2 py-1 rounded-lg group-hover:bg-[#4b207f] group-hover:text-white transition">Orodha ➔</span>
+            </div>
         </div>
-        <div class="dashboard-card card-present bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-green-500">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Waliofika Leo</p>
-            <h3 class="text-2xl font-bold text-green-600 mt-1">{{ present_today|default:0 }}</h3>
+
+        <!-- Waliofika Leo -->
+        <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-emerald-500"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Waliofika Leo</p>
+            <div class="flex items-baseline justify-between">
+                <h3 class="text-3xl font-extrabold text-emerald-600">{{ present_today|default:0 }}</h3>
+                <span class="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">Active</span>
+            </div>
         </div>
-        <div class="dashboard-card card-late bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-yellow-500">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Waliochelewa</p>
-            <h3 class="text-2xl font-bold text-yellow-600 mt-1">{{ late_today|default:0 }}</h3>
+
+        <!-- Waliochelewa -->
+        <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-amber-500"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Waliochelewa</p>
+            <div class="flex items-baseline justify-between">
+                <h3 class="text-3xl font-extrabold text-amber-600">{{ late_today|default:0 }}</h3>
+                <span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Late</span>
+            </div>
         </div>
-        <div class="dashboard-card card-absent bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-red-500">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Waliokosa / Likizo</p>
-            <h3 class="text-2xl font-bold text-red-600 mt-1">{{ on_leave_or_absent|default:0 }}</h3>
+
+        <!-- Waliokosa / Likizo -->
+        <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-rose-500"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Waliokosa / Likizo</p>
+            <div class="flex items-baseline justify-between">
+                <h3 class="text-3xl font-extrabold text-rose-600">{{ on_leave_or_absent|default:0 }}</h3>
+                <span class="text-xs font-medium text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">Absent</span>
+            </div>
         </div>
-        <div class="dashboard-card card-pending bg-white p-4 rounded-xl border border-gray-100 border-l-4 border-l-blue-500">
-            <p class="text-xs font-semibold text-gray-400 uppercase">Maombi Yaliyopo</p>
-            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ pending_requests|default:0 }}</h3>
+
+        <!-- Maombi Yaliyopo -->
+        <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-blue-500"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Maombi Yaliyopo</p>
+            <div class="flex items-baseline justify-between">
+                <h3 class="text-3xl font-extrabold text-blue-600">{{ pending_requests|default:0 }}</h3>
+                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">Pending</span>
+            </div>
         </div>
+
     </div>
 
-    <!-- Live Attendance Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">Mahudhurio ya Leo (Live Logs)</h2>
+    <!-- LIVE ATTENDANCE TABLE -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span>Mahudhurio ya Leo (Live Logs)</span>
+            </h2>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-xl">Real-time update</span>
+        </div>
+        
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
-                        <th class="p-3">Mfanyakazi</th>
-                        <th class="p-3">ID / Code</th>
-                        <th class="p-3">Idara</th>
-                        <th class="p-3">Check-In</th>
-                        <th class="p-3">Check-Out</th>
-                        <th class="p-3">Hali (Status)</th>
-                        <th class="p-3">Njia (Source)</th>
+                    <tr class="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase bg-slate-50/70 tracking-wider">
+                        <th class="p-3.5 rounded-l-xl">Mfanyakazi</th>
+                        <th class="p-3.5">ID / Code</th>
+                        <th class="p-3.5">Idara</th>
+                        <th class="p-3.5">Check-In</th>
+                        <th class="p-3.5">Check-Out</th>
+                        <th class="p-3.5">Hali (Status)</th>
+                        <th class="p-3.5 rounded-r-xl">Njia (Source)</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
+                <tbody class="divide-y divide-slate-100 text-sm">
                     {% for record in today_logs %}
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-3 font-medium text-gray-800">
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="p-3.5 font-semibold text-slate-800">
                             {% if record.employee %}
                                 {{ record.employee.first_name }} {{ record.employee.last_name }}
                             {% elif record.officer %}
@@ -75,7 +138,7 @@
                             {% endif %}
                         </td>
 
-                        <td class="p-3 text-gray-500 font-mono">
+                        <td class="p-3.5 text-slate-500 font-mono text-xs">
                             {% if record.employee %}
                                 {{ record.employee.employee_code|default:"-" }}
                             {% elif record.officer %}
@@ -85,7 +148,7 @@
                             {% endif %}
                         </td>
 
-                        <td class="p-3 text-gray-500">
+                        <td class="p-3.5 text-slate-600">
                             {% if record.employee %}
                                 {{ record.employee.department.name|default:record.employee.department|default:"-" }}
                             {% elif record.officer %}
@@ -95,34 +158,38 @@
                             {% endif %}
                         </td>
 
-                        <td class="p-3 text-gray-800 font-semibold text-green-600">
+                        <td class="p-3.5 font-bold text-emerald-600">
                             {{ record.check_in_time|time:"H:i:s A" }}
                         </td>
 
-                        <td class="p-3 text-gray-800 font-semibold text-blue-600">
+                        <td class="p-3.5 font-bold text-blue-600">
                             {% if record.check_out_time %}
                                 {{ record.check_out_time|time:"H:i:s A" }}
                             {% else %}
-                                <span class="text-xs text-gray-400 italic">Bado hajatoka</span>
+                                <span class="text-xs text-slate-400 font-normal italic bg-slate-100 px-2 py-1 rounded-md">Bado hajatoka</span>
                             {% endif %}
                         </td>
 
-                        <!-- Status Badge na Upper Filter -->
-                        <td class="p-3">
+                        <td class="p-3.5">
                             {% if record.status|upper == 'PRESENT' %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">PRESENT</span>
+                                <span class="px-2.5 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 rounded-lg">PRESENT</span>
                             {% elif record.status|upper == 'LATE' %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">LATE</span>
+                                <span class="px-2.5 py-1 text-xs font-bold bg-amber-100 text-amber-800 rounded-lg">LATE</span>
                             {% else %}
-                                <span class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">{{ record.status }}</span>
+                                <span class="px-2.5 py-1 text-xs font-bold bg-rose-100 text-rose-800 rounded-lg">{{ record.status }}</span>
                             {% endif %}
                         </td>
 
-                        <td class="p-3 text-gray-500 text-xs">Biometric / API</td>
+                        <td class="p-3.5 text-slate-500 text-xs font-medium">Biometric / API</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="p-4 text-center text-gray-400">Bado hakuna mahudhurio yoyote yaliyorekodiwa leo.</td>
+                        <td colspan="7" class="p-8 text-center text-slate-400 text-sm">
+                            <div class="flex flex-col items-center justify-center space-y-2">
+                                <span class="text-2xl">📋</span>
+                                <p>Bado hakuna mahudhurio yoyote yaliyorekodiwa leo.</p>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -130,42 +197,42 @@
         </div>
     </div>
 
-    <!-- ORODHA YA WAFANYAKAZI WOTE -->
-    <div id="all-employees-section" class="hidden bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all duration-300">
-        <div class="flex justify-between items-center mb-4">
+    <!-- ORODHA YA WAFANYAKAZI WOTE (HIDDEN SECTION) -->
+    <div id="all-employees-section" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 transition-all duration-300">
+        <div class="flex justify-between items-center mb-6">
             <div>
-                <h2 class="text-lg font-bold text-gray-800">Orodha ya Wafanyakazi Waliosajiliwa</h2>
-                <p class="text-xs text-gray-500">Taarifa zote za watumiaji walio kwenye mfumo.</p>
+                <h2 class="text-lg font-bold text-slate-800">Orodha ya Wafanyakazi Waliosajiliwa</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Taarifa zote za watumiaji walio kwenye mfumo.</p>
             </div>
-            <button onclick="toggleEmployeesTable()" class="text-gray-400 hover:text-gray-600 text-sm font-semibold bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg transition">
+            <button onclick="toggleEmployeesTable()" class="text-slate-500 hover:text-slate-800 text-xs font-bold bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition">
                 ✕ Funga
             </button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase bg-gray-50">
-                        <th class="p-3">Mfanyakazi</th>
-                        <th class="p-3">Code / ID</th>
-                        <th class="p-3">Idara</th>
-                        <th class="p-3">Wadhifa (Role)</th>
-                        <th class="p-3">Namba ya Simu</th>
+                    <tr class="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase bg-slate-50/70 tracking-wider">
+                        <th class="p-3.5 rounded-l-xl">Mfanyakazi</th>
+                        <th class="p-3.5">Code / ID</th>
+                        <th class="p-3.5">Idara</th>
+                        <th class="p-3.5">Wadhifa (Role)</th>
+                        <th class="p-3.5 rounded-r-xl">Namba ya Simu</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
+                <tbody class="divide-y divide-slate-100 text-sm">
                     {% for emp in all_employees %}
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-3 font-medium text-gray-800">
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="p-3.5 font-semibold text-slate-800">
                             {{ emp.first_name }} {{ emp.last_name }}
                         </td>
-                        <td class="p-3 text-gray-500 font-mono">{{ emp.employee_code|default:"-" }}</td>
-                        <td class="p-3 text-gray-500">{{ emp.department.name|default:emp.department|default:"-" }}</td>
-                        <td class="p-3 text-gray-500">{{ emp.role|default:emp.job_title|default:"Mfanyakazi" }}</td>
-                        <td class="p-3 text-gray-500">{{ emp.phone_number|default:"-" }}</td>
+                        <td class="p-3.5 text-slate-500 font-mono text-xs">{{ emp.employee_code|default:"-" }}</td>
+                        <td class="p-3.5 text-slate-600">{{ emp.department.name|default:emp.department|default:"-" }}</td>
+                        <td class="p-3.5 text-slate-600">{{ emp.role|default:emp.job_title|default:"Mfanyakazi" }}</td>
+                        <td class="p-3.5 text-slate-600">{{ emp.phone_number|default:"-" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="p-4 text-center text-gray-400">Hakuna mfanyakazi aliyesajiliwa kwenye mfumo bado.</td>
+                        <td colspan="5" class="p-8 text-center text-slate-400 text-sm">Hakuna mfanyakazi aliyesajiliwa kwenye mfumo bado.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

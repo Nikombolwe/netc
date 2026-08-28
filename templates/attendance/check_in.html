@@ -1,73 +1,142 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --primary-emperor: #4b207f;
+        --secondary-denim: #2f557f;
+        --accent-ming: #3e8391;
+    }
+    .focus-custom:focus {
+        outline: none;
+        border-color: var(--primary-emperor);
+        box-shadow: 0 0 0 3px rgba(75, 32, 127, 0.12);
+    }
+    .btn-checkin {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        transition: all 0.25s ease;
+    }
+    .btn-checkin:hover {
+        opacity: 0.93;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25);
+    }
+    .btn-checkout {
+        background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+        transition: all 0.25s ease;
+    }
+    .btn-checkout:hover {
+        opacity: 0.93;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(75, 32, 127, 0.25);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-8 border border-gray-100">
+<div class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+    
+    <!-- SPLIT CONTAINER (KAMA PICHANI) -->
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 grid grid-cols-1 md:grid-cols-2">
         
-        <!-- Header / Logo Area -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-3 text-2xl">
-                ⏱️
+        <!-- LEFT BANNER SIDE -->
+        <div class="bg-gradient-to-br from-[#4b207f] via-[#2f557f] to-[#3e8391] p-8 md:p-10 flex flex-col justify-between text-white relative">
+            <!-- Decorative overlay pattern -->
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            
+            <!-- Logo / Brand Header -->
+            <div class="relative z-10 flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 text-2xl shadow-sm">
+                    ⏱️
+                </div>
+                <div>
+                    <span class="font-bold tracking-widest text-xs uppercase text-slate-200 block">Smart System</span>
+                    <span class="text-xs text-slate-300 font-medium">Mahudhurio</span>
+                </div>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800">Mfumo wa Mahudhurio</h1>
-            <p class="text-sm text-gray-500 mt-1">Ingiza Namba yako ya Mfanyakazi (Employee Code)</p>
-            <p class="text-xs font-semibold text-blue-600 mt-2 bg-blue-50 py-1 px-3 rounded-full inline-block">
-                Leo: {% now "l, j F Y" %}
-            </p>
+
+            <!-- Welcome Text & Live Date -->
+            <div class="relative z-10 my-auto py-8">
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-3 leading-tight tracking-tight">Mfumo wa Mahudhurio</h1>
+                <p class="text-slate-200 text-sm leading-relaxed mb-6">
+                    Ingiza namba yako ya mfanyakazi ili kurekodi kuingia au kutoka kwako kwa haraka na usalama.
+                </p>
+                <div class="inline-block bg-white/10 backdrop-blur-md border border-white/20 py-2 px-4 rounded-xl text-xs font-semibold text-white shadow-sm">
+                    📅 Leo: {% now "l, j F Y" %}
+                </div>
+            </div>
+
+            <!-- Footer note inside banner -->
+            <div class="relative z-10 text-xs text-slate-300 font-medium">
+                &copy; 2026 Tech Shine TZ
+            </div>
         </div>
 
-        <!-- Notification Messages (Sukses / Error) -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="p-4 mb-6 text-sm rounded-xl font-medium {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %} flex items-center">
-                    <span class="mr-2">{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
-                    <div>{{ message }}</div>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- Check-In / Check-Out Form -->
-        <form method="POST" action="{% url 'employee_checkin' %}" class="space-y-6">
-            {% csrf_token %}
-
-            <div>
-                <label for="employee_code" class="block text-sm font-semibold text-gray-700 mb-2">
-                    Employee Code / ID
-                </label>
-                <div class="relative">
-                    <input type="text" 
-                           name="employee_code" 
-                           id="employee_code" 
-                           required 
-                           autofocus
-                           placeholder="Mfano: EMP-123" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-xl text-center text-lg font-mono font-bold tracking-wider focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase placeholder-gray-300">
-                </div>
+        <!-- RIGHT FORM SIDE -->
+        <div class="p-8 md:p-10 flex flex-col justify-center bg-white">
+            
+            <!-- Header Area -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Weka Taarifa</h2>
+                <p class="text-sm text-slate-500 mt-1">Ingiza Namba yako ya Mfanyakazi (Employee Code)</p>
             </div>
 
-            <!-- Vitufe vya Check-In na Check-Out -->
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <button type="submit" 
-                        name="action" 
-                        value="check_in" 
-                        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
-                    <span>📥 Check In</span>
-                </button>
+            <!-- Notification Messages (Sukses / Error) -->
+            {% if messages %}
+                <div class="space-y-2 mb-6">
+                    {% for message in messages %}
+                        <div class="p-3.5 text-sm rounded-xl font-medium {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %} flex items-center shadow-sm">
+                            <span class="mr-2 text-base">{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+                            <div>{{ message }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-                <button type="submit" 
-                        name="action" 
-                        value="check_out" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
-                    <span>📤 Check Out</span>
-                </button>
+            <!-- Check-In / Check-Out Form -->
+            <form method="POST" action="{% url 'employee_checkin' %}" class="space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label for="employee_code" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        Employee Code / ID *
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               name="employee_code" 
+                               id="employee_code" 
+                               required 
+                               autofocus
+                               placeholder="Mfano: EMP-123" 
+                               class="w-full px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-xl text-center text-lg font-mono font-bold tracking-wider text-slate-800 focus-custom transition uppercase placeholder-slate-300">
+                    </div>
+                </div>
+
+                <!-- Vitufe vya Check-In na Check-Out -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button type="submit" 
+                            name="action" 
+                            value="check_in" 
+                            class="w-full btn-checkin text-white font-bold py-3.5 px-3 rounded-xl shadow-md text-sm flex items-center justify-center space-x-1.5">
+                        <span>📥 Check In</span>
+                    </button>
+
+                    <button type="submit" 
+                            name="action" 
+                            value="check_out" 
+                            class="w-full btn-checkout text-white font-bold py-3.5 px-3 rounded-xl shadow-md text-sm flex items-center justify-center space-x-1.5">
+                        <span>📤 Check Out</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Live Clock Footer -->
+            <div class="mt-8 pt-5 border-t border-slate-100 text-center">
+                <p class="text-xs text-slate-400 font-medium">Muda wa Sasa (System Time):</p>
+                <p id="live-clock" class="text-xl font-mono font-bold text-slate-700 mt-0.5">--:--:--</p>
             </div>
-        </form>
 
-        <!-- Live Clock Footer -->
-        <div class="mt-8 pt-6 border-t border-gray-100 text-center">
-            <p class="text-xs text-gray-400">Muda wa Sasa (System Time):</p>
-            <p id="live-clock" class="text-xl font-mono font-bold text-gray-700 mt-1">--:--:--</p>
         </div>
 
     </div>

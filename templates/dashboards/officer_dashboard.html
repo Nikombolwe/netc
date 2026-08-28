@@ -2,6 +2,16 @@
 
 {% block content %}
 <style>
+    :root {
+        --primary-emperor: #4b207f;
+        --secondary-denim: #2f557f;
+        --accent-ming: #3e8391;
+    }
+
+    .brand-gradient {
+        background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+    }
+
     .dashboard-container {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f8fafc;
@@ -18,20 +28,22 @@
         gap: 16px;
         margin-bottom: 24px;
         background: #ffffff;
-        padding: 20px 24px;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        padding: 24px;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px -2px rgba(75, 32, 127, 0.05);
+        border: 1px solid rgba(75, 32, 127, 0.08);
     }
 
     .header-title { 
         font-size: 24px; 
-        font-weight: 700; 
+        font-weight: 800; 
         color: #0f172a; 
         margin: 0; 
+        letter-spacing: -0.025em;
     }
     
     .officer-highlight { 
-        color: #0284c7; 
+        color: var(--primary-emperor); 
     }
 
     .header-right-group {
@@ -42,17 +54,20 @@
     }
 
     .date-display {
-        font-size: 14px;
+        font-size: 13px;
         color: #64748b;
-        font-weight: 500;
+        font-weight: 600;
+        background: #f1f5f9;
+        padding: 8px 14px;
+        border-radius: 10px;
         white-space: nowrap;
     }
 
     .btn-logout-custom {
         background-color: #ef4444;
         color: #ffffff;
-        padding: 9px 18px;
-        border-radius: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
         font-weight: 600;
         font-size: 13px;
         text-decoration: none;
@@ -60,13 +75,14 @@
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-        transition: background-color 0.2s ease;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        transition: all 0.2s ease;
     }
 
     .btn-logout-custom:hover {
         background-color: #dc2626;
+        transform: translateY(-1px);
     }
 
     .main-grid {
@@ -82,15 +98,20 @@
 
     .panel-card {
         background: #ffffff;
-        border-radius: 12px;
+        border-radius: 20px;
         border: 1px solid #e2e8f0;
         padding: 24px;
         margin-bottom: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+    }
+
+    .panel-card:hover {
+        box-shadow: 0 15px 30px -5px rgba(75, 32, 127, 0.05);
     }
 
     .panel-title {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 700;
         color: #1e293b;
         margin-bottom: 20px;
@@ -103,57 +124,84 @@
 
     .form-control-custom {
         width: 100%;
-        padding: 10px 14px;
+        padding: 11px 16px;
         border: 1px solid #cbd5e1;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 14px;
         background-color: #f8fafc;
         box-sizing: border-box;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
+        outline: none;
+        transition: all 0.2s;
+        color: #334155;
+    }
+
+    .form-control-custom:focus {
+        border-color: var(--primary-emperor);
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(75, 32, 127, 0.1);
     }
 
     .btn-submit {
-        background-color: #0284c7;
+        background-color: var(--primary-emperor);
         color: white;
-        padding: 10px 18px;
+        padding: 11px 20px;
         border: none;
-        border-radius: 8px;
+        border-radius: 12px;
         font-weight: 600;
+        font-size: 14px;
         cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(75, 32, 127, 0.2);
     }
-    .btn-submit:hover { background-color: #0369a1; }
+    .btn-submit:hover { 
+        background-color: #3d1968; 
+        transform: translateY(-1px);
+    }
 
     .btn-print {
         background-color: #16a34a;
         color: white;
-        padding: 8px 14px;
-        border-radius: 6px;
+        padding: 9px 16px;
+        border-radius: 10px;
         text-decoration: none;
         font-size: 13px;
         font-weight: 600;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
+    .btn-print:hover { background-color: #15803d; transform: translateY(-1px); }
 
     .custom-table { width: 100%; border-collapse: collapse; }
-    .custom-table th { background-color: #f8fafc; color: #475569; text-align: left; padding: 12px 16px; font-size: 13px; }
-    .custom-table td { padding: 12px 16px; border-top: 1px solid #f1f5f9; font-size: 14px; }
+    .custom-table th { background-color: #f8fafc; color: #475569; text-align: left; padding: 14px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .custom-table td { padding: 14px 16px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
+    .custom-table tr:hover td { background-color: #f8fafc/50; }
 
     .request-item {
-        background: #f0f9ff;
-        border: 1px solid #bae6fd;
-        border-left: 4px solid #0284c7;
-        padding: 16px;
-        border-radius: 8px;
+        background: #fdfcff;
+        border: 1px solid #e9d5ff;
+        border-left: 4px solid var(--primary-emperor);
+        padding: 18px;
+        border-radius: 14px;
         margin-bottom: 16px;
+        box-shadow: 0 2px 6px rgba(75, 32, 127, 0.02);
     }
-    .action-btns { display: flex; gap: 10px; margin-top: 12px; }
-    .btn-approve { background-color: #16a34a; color: white; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; }
-    .btn-reject { background-color: #ef4444; color: white; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; }
+    
+    .action-btns { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-approve { background-color: #16a34a; color: white; padding: 7px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(22,163,74,0.2); transition: 0.2s; }
+    .btn-approve:hover { background-color: #15803d; }
+    
+    .btn-reject { background-color: #ef4444; color: white; padding: 7px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(239,68,68,0.2); transition: 0.2s; }
+    .btn-reject:hover { background-color: #dc2626; }
 
-    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-block; }
+    .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.02em; }
     .status-delivered { background-color: #dcfce7; color: #15803d; }
     .status-failed { background-color: #fee2e2; color: #b91c1c; }
 
-    /* CLASSES ZA DJANGO MESSAGES ZILIZOSAFISHWA KABISA */
+    /* DJANGO MESSAGES STYLING */
     .msg-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .msg-error { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .msg-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
@@ -163,10 +211,10 @@
     
     <!-- DJANGO MESSAGES -->
     {% if messages %}
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 24px;">
             {% for message in messages %}
                 <div class="{% if message.tags == 'success' %}msg-success{% elif message.tags == 'error' %}msg-error{% else %}msg-info{% endif %}" 
-                     style="padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; font-weight: 600;">
+                     style="padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; font-size: 14px; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
                     {{ message }}
                 </div>
             {% endfor %}
@@ -176,18 +224,22 @@
     <!-- HEADER SECTION -->
     <div class="header-section">
         <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--primary-emperor); display: inline-block;"></span>
+                <span style="font-size: 11px; font-weight: 700; color: var(--primary-emperor); text-transform: uppercase; letter-spacing: 0.05em;">HQ Management Portal</span>
+            </div>
             <h1 class="header-title">
                 Dashboard ya Ofisa: 
                 <span class="officer-highlight">
                     {% if officer %}{{ officer.first_name }} {{ officer.last_name }}{% else %}{{ request.user.username }}{% endif %}
                 </span>
             </h1>
-            <p style="margin: 4px 0 0 0; color: #64748b;">Usimamizi Mkuu & Mawasiliano (HQ)</p>
+            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Usimamizi Mkuu & Mawasiliano (HQ)</p>
         </div>
         
         <div class="header-right-group">
             <div class="date-display">
-                Leo ni: <strong>{% now "j F Y" %}</strong>
+                📅 Leo ni: <strong style="color: #334155;">{% now "j F Y" %}</strong>
             </div>
             
             <form method="POST" action="{% url 'logout' %}" style="margin: 0; display: inline-block;">
@@ -204,28 +256,32 @@
         
         <!-- 1. TUMA SMS KWA MAKUNDI NA SMS LOGS -->
         <div class="panel-card">
-            <div class="panel-title">Tuma SMS kwa Makundi</div>
+            <div class="panel-title">
+                <span>📨 Tuma SMS kwa Makundi</span>
+            </div>
             <form method="POST">
                 {% csrf_token %}
                 <input type="hidden" name="send_bulk_sms" value="1">
                 
-                <label style="font-size: 14px; font-weight: 600; color: #475569;">Kundi la Watumishi</label>
+                <label style="font-size: 13px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">Kundi la Watumishi</label>
                 <select name="target_group" class="form-control-custom" required>
                     <option value="ALL">Wafanyakazi Wote & Wakurugenzi</option>
                     <option value="DIRECTORS">Wakurugenzi Pekee</option>
                     <option value="STAFF">Wafanyakazi Pekee (Bila Wakurugenzi)</option>
                 </select>
 
-                <label style="font-size: 14px; font-weight: 600; color: #475569;">Ujumbe wa SMS</label>
-                <textarea name="message_text" class="form-control-custom" rows="3" placeholder="Andika ujumbe wako..." required></textarea>
+                <label style="font-size: 13px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">Ujumbe wa SMS</label>
+                <textarea name="message_text" class="form-control-custom" rows="3" placeholder="Andika ujumbe wako hapa..." required style="resize: vertical;"></textarea>
 
                 <button type="submit" class="btn-submit">Tuma Ujumbe (SMS)</button>
             </form>
 
             <!-- SMS LOGS TABLE -->
-            <div style="margin-top: 25px; border-top: 2px solid #f1f5f9; padding-top: 15px;">
-                <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #0f172a;">Kumbukumbu za SMS Zilizotumwa (SMS Logs):</h4>
-                <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff;">
+            <div style="margin-top: 28px; border-top: 2px solid #f1f5f9; padding-top: 20px;">
+                <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 14px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                    <span>📊</span> Kumbukumbu za SMS Zilizotumwa (SMS Logs):
+                </h4>
+                <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
                     <table class="custom-table" style="font-size: 13px;">
                         <thead>
                             <tr style="position: sticky; top: 0; background-color: #f8fafc; z-index: 1;">
@@ -239,9 +295,9 @@
                             {% if sms_logs %}
                                 {% for log in sms_logs %}
                                 <tr>
-                                    <td style="color: #64748b; font-size: 12px;">{{ log.created_at|date:"d/m/Y H:i" }}</td>
-                                    <td><strong>{{ log.recipient_name }}</strong></td>
-                                    <td>{{ log.phone_number }}</td>
+                                    <td style="color: #64748b; font-size: 12px; font-weight: 500;">{{ log.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td><strong style="color: #1e293b;">{{ log.recipient_name }}</strong></td>
+                                    <td style="color: #475569;">{{ log.phone_number }}</td>
                                     <td>
                                         {% if log.status == 'DELIVERED' or log.status == 'Sent' or log.status == 'Success' %}
                                             <span class="status-badge status-delivered">DELIVERED</span>
@@ -253,7 +309,7 @@
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">Hakuna kumbukumbu za SMS zilizorekodiwa bado.</td>
+                                    <td colspan="4" style="text-align:center; color:#94a3b8; padding: 25px; font-style: italic;">Hakuna kumbukumbu za SMS zilizorekodiwa bado.</td>
                                 </tr>
                             {% endif %}
                         </tbody>
@@ -264,35 +320,43 @@
 
         <!-- 2. PITISHA MAOMBI YA RUHUSA -->
         <div class="panel-card">
-            <div class="panel-title">Maombi Yote ya Ruhusa Yanayosubiri Idhini</div>
-            {% if pending_requests %}
-                {% for req in pending_requests %}
-                <div class="request-item">
-                    <div style="display: flex; justify-content: space-between; font-weight: 700;">
-                        <span>
-                            {% if req.user.employee_profile %}
-                                {{ req.user.employee_profile.first_name }} {{ req.user.employee_profile.last_name }}
-                            {% else %}
-                                {{ req.user.username }}
-                            {% endif %}
-                        </span>
-                        <span style="font-size: 12px; color: #64748b;">{{ req.start_date }}</span>
+            <div class="panel-title">
+                <span>📋 Maombi Yanayosubiri Idhini</span>
+                {% if pending_requests %}
+                    <span style="background: #f3e8ff; color: var(--primary-emperor); font-size: 12px; padding: 2px 10px; border-radius: 10px; font-weight: 700;">{{ pending_requests|length }} Mapya</span>
+                {% endif %}
+            </div>
+            
+            <div style="max-height: 440px; overflow-y: auto; padding-right: 4px;">
+                {% if pending_requests %}
+                    {% for req in pending_requests %}
+                    <div class="request-item">
+                        <div style="display: flex; justify-content: space-between; font-weight: 700; align-items: center;">
+                            <span style="color: #0f172a; font-size: 15px;">
+                                {% if req.user.employee_profile %}
+                                    {{ req.user.employee_profile.first_name }} {{ req.user.employee_profile.last_name }}
+                                {% else %}
+                                    {{ req.user.username }}
+                                {% endif %}
+                            </span>
+                            <span style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px;">{{ req.start_date }}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #475569; margin: 8px 0; line-height: 1.5;">
+                            <div><strong>Aina:</strong> <span style="color: var(--secondary-denim);">{{ req.get_request_type_display|default:req.request_type }}</span></div>
+                            <div style="margin-top: 2px;"><strong>Sababu:</strong> {{ req.reason }}</div>
+                        </div>
+                        <div class="action-btns">
+                            <a href="{% url 'officer_process_request' req.id 'approve' %}" class="btn-approve">✓ Kubali (Approve)</a>
+                            <a href="{% url 'officer_process_request' req.id 'reject' %}" class="btn-reject">✕ Kataa (Reject)</a>
+                        </div>
                     </div>
-                    <div style="font-size: 13px; color: #475569; margin: 6px 0;">
-                        <strong>Aina:</strong> {{ req.get_request_type_display|default:req.request_type }} <br>
-                        <strong>Sababu:</strong> {{ req.reason }}
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: #94a3b8; padding: 60px 20px; font-style: italic;">
+                        ✨ Hakuna ombi jipya linalosubiri idhini yako kwa sasa.
                     </div>
-                    <div class="action-btns">
-                        <a href="{% url 'officer_process_request' req.id 'approve' %}" class="btn-approve">Kubali (Approve)</a>
-                        <a href="{% url 'officer_process_request' req.id 'reject' %}" class="btn-reject">Kataa (Reject)</a>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div style="text-align: center; color: #94a3b8; padding: 40px;">
-                    Hakuna ombi jipya linalosubiri idhini yako.
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
 
     </div>
@@ -300,13 +364,13 @@
     <!-- 3. REPORT & ATTENDANCE SECTION -->
     <div class="panel-card">
         <div class="panel-title">
-            <span>Taarifa za Mahudhurio ya Watumishi Wote</span>
+            <span>📈 Taarifa za Mahudhurio ya Watumishi Wote</span>
             <a href="{% url 'export_attendance_csv' %}?month={{ selected_month }}&year={{ selected_year }}&employee={{ selected_employee }}" class="btn-print">
                 🖨️ Print / Pakua Ripoti (Excel/CSV)
             </a>
         </div>
 
-        <form method="GET" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <form method="GET" style="display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; background: #f8fafc; padding: 16px; border-radius: 14px; border: 1px solid #e2e8f0;">
             <select name="month" class="form-control-custom" style="width: 140px; margin: 0;">
                 <option value="ALL" {% if selected_month == 'ALL' %}selected{% endif %}>Miezi Yote</option>
                 {% for m in months %}
@@ -314,13 +378,13 @@
                 {% endfor %}
             </select>
 
-            <select name="year" class="form-control-custom" style="width: 120px; margin: 0;">
+            <select name="year" class="form-control-custom" style="width: 130px; margin: 0;">
                 {% for y in years %}
                 <option value="{{ y }}" {% if selected_year == y|stringformat:"i" %}selected{% endif %}>Mwaka {{ y }}</option>
                 {% endfor %}
             </select>
 
-            <select name="employee" class="form-control-custom" style="width: 220px; margin: 0;">
+            <select name="employee" class="form-control-custom" style="width: 230px; margin: 0;">
                 <option value="ALL">Wafanyakazi Wote (Orodha)</option>
                 {% for emp in all_employees %}
                 <option value="{{ emp.id }}" {% if selected_employee == emp.id|stringformat:"i" %}selected{% endif %}>
@@ -331,55 +395,57 @@
 
             <input type="text" name="search" value="{{ search_query }}" placeholder="Tafuta Jina au Kodi..." class="form-control-custom" style="width: 200px; margin: 0;">
 
-            <button type="submit" class="btn-submit" style="padding: 8px 16px;">Chuja (Filter)</button>
+            <button type="submit" class="btn-submit" style="padding: 11px 18px; margin: 0;">Chuja (Filter)</button>
         </form>
 
-        <table class="custom-table">
-            <thead>
-                <tr>
-                    <th>Kodi</th>
-                    <th>Jina la Mfanyakazi</th>
-                    <th>Idara</th>
-                    <th>Tarehe</th>
-                    <th>Kuingia</th>
-                    <th>Kutoka</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if attendances %}
-                    {% for att in attendances %}
+        <div style="overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <table class="custom-table">
+                <thead>
                     <tr>
-                        <td><strong>{{ att.employee.employee_code|default:"-" }}</strong></td>
-                        <td>
-                            {% if att.employee %}
-                                {{ att.employee.first_name }} {{ att.employee.last_name }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ att.employee.department.name|default:"-" }}</td>
-                        <td>{{ att.attendance_date }}</td>
-                        <td>{{ att.time_in|default:"-" }}</td>
-                        <td>{{ att.time_out|default:"-" }}</td>
-                        <td>
-                            {% if att.is_late or att.status == 'LATE' %}
-                                <span style="color: #b45309; font-weight: 600;">Kuchelewa</span>
-                            {% else %}
-                                <span style="color: #15803d; font-weight: 600;">Wakati Sahihi</span>
-                            {% endif %}
-                        </td>
+                        <th>Kodi</th>
+                        <th>Jina la Mfanyakazi</th>
+                        <th>Idara</th>
+                        <th>Tarehe</th>
+                        <th>Kuingia</th>
+                        <th>Kutoka</th>
+                        <th>Status</th>
                     </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: #94a3b8; padding: 25px;">
-                            Hakuna kumbukumbu za mahudhurio zilizopatikana.
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% if attendances %}
+                        {% for att in attendances %}
+                        <tr>
+                            <td><strong style="color: var(--primary-emperor);">{{ att.employee.employee_code|default:"-" }}</strong></td>
+                            <td>
+                                {% if att.employee %}
+                                    <strong style="color: #1e293b;">{{ att.employee.first_name }} {{ att.employee.last_name }}</strong>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td style="color: #64748b;">{{ att.employee.department.name|default:"-" }}</td>
+                            <td style="font-weight: 500;">{{ att.attendance_date }}</td>
+                            <td><span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 13px;">{{ att.time_in|default:"-" }}</span></td>
+                            <td><span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 13px;">{{ att.time_out|default:"-" }}</span></td>
+                            <td>
+                                {% if att.is_late or att.status == 'LATE' %}
+                                    <span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 4px 10px; border-radius: 20px; font-size: 12px;">Kuchelewa</span>
+                                {% else %}
+                                    <span style="color: #15803d; font-weight: 700; background: #dcfce7; padding: 4px 10px; border-radius: 20px; font-size: 12px;">Wakati Sahihi</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #94a3b8; padding: 40px; font-style: italic;">
+                                📭 Hakuna kumbukumbu za mahudhurio zilizopatikana kwa vigezo hivi.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
