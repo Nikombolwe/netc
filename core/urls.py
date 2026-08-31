@@ -18,4 +18,6 @@ urlpatterns = [
     
     # Njia ya Mkato (Shortcut) kuzuia 404 ukipiga /admin-overview/ pekee
     path('admin-overview/', lambda request: redirect('dashboard:admin_overview')),
+    
+    
 ]

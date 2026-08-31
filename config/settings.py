@@ -52,12 +52,12 @@ INSTALLED_APPS = [
     'employees',
     'attendance',
     'leaves',
-    'emergencies',
-    'permissions',
-    'business_trips',
-    'notifications',
+    # 'emergencies',
+    # 'permissions',
+    # 'business_trips',
+    # 'notifications',
     'warnings',
-    'reports',
+    # 'reports',
     'dashboard',
     'communications',
 ]
@@ -185,3 +185,6 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='info@netcadventist.org')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='qwojyagougqzusus')
 
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='NETC Attendance System <info@netcadventist.org>')
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/admin-overview/'
+LOGOUT_REDIRECT_URL = '/auth/login/'

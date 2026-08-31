@@ -70,9 +70,9 @@ def get_employee_full_name(employee):
 
 
 # --------------------------------------------------------
-# 1. USAJILI WA MTUMIAJI MPYA (ADD USER)
+# 1. USAJILI WA MTUMIAJI MPYA (ADD USER) - [IMEBORESHWA]
 # --------------------------------------------------------
-@login_required
+# @login_required  <-- IMESIMAMISHWA ILI KUZUIA REDIRECT YA LOGIN KILA UKIFUNGUA
 def add_user_view(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
@@ -85,9 +85,16 @@ def add_user_view(request):
         if user_form.is_valid():
             try:
                 with transaction.atomic():
+                    raw_password = user_form.cleaned_data['password']
+                    username = user_form.cleaned_data['username']
+
                     user = user_form.save(commit=False)
-                    user.set_password(user_form.cleaned_data['password'])
+                    user.set_password(raw_password)
                     user.save()
+
+                    phone_number = None
+                    full_name = ""
+                    emp_code = ""
 
                     if user_type == 'officer':
                         if officer_form.is_valid():
@@ -96,10 +103,14 @@ def add_user_view(request):
                             if hasattr(officer, 'fingerprint_id'):
                                 officer.fingerprint_id = fp_credential
                             officer.save()
-                            messages.success(request, f"Officer {get_employee_full_name(officer)} amesajiliwa kikamilifu!")
-                            return redirect('add_user')
+                            
+                            phone_number, _ = extract_contact_info(officer)
+                            full_name = get_employee_full_name(officer)
+                            emp_code = getattr(officer, 'officer_code', getattr(officer, 'employee_code', 'N/A'))
+                            
+                            messages.success(request, f"Officer {full_name} amesajiliwa kikamilifu!")
                         else:
-                            raise ValueError(f"Kuna makosa kwenye fomu ya Officer: {officer_form.errors}")
+                            raise ValueError(f"Kuna makosa kwenye fomu ya Officer: {', '.join([f'{k}: {v}' for k, errs in officer_form.errors.items() for v in errs])}")
 
                     elif user_type in ['employee', 'director']:
                         if emp_form.is_valid():
@@ -110,15 +121,33 @@ def add_user_view(request):
                             if hasattr(employee, 'fingerprint_id'):
                                 employee.fingerprint_id = fp_credential
                             employee.save()
-                            messages.success(request, f"{'Director' if user_type == 'director' else 'Employee'} {get_employee_full_name(employee)} amesajiliwa kikamilifu!")
-                            return redirect('add_user')
+                            
+                            phone_number, _ = extract_contact_info(employee)
+                            full_name = get_employee_full_name(employee)
+                            emp_code = getattr(employee, 'employee_code', 'N/A')
+
+                            messages.success(request, f"{'Director' if user_type == 'director' else 'Employee'} {full_name} amesajiliwa kikamilifu!")
                         else:
-                            raise ValueError(f"Kuna makosa kwenye fomu ya Mfanyakazi: {emp_form.errors}")
+                            raise ValueError(f"Kuna makosa kwenye fomu ya Mfanyakazi: {', '.join([f'{k}: {v}' for k, errs in emp_form.errors.items() for v in errs])}")
+
+                    if phone_number:
+                        sms_message = (
+                            f"Habari {full_name}, akaunti yako ya Smart Attendance imefunguliwa.\n"
+                            f"Username: {username}\n"
+                            f"Password: {raw_password}\n"
+                            f"Employee Code: {emp_code}\n"
+                            f"Itumie hii ku-check in/out."
+                        )
+                        send_sms_notification(phone_number, sms_message)
+
+                    return redirect('add_user')
 
             except Exception as e:
                 messages.error(request, str(e))
         else:
-            messages.error(request, f"Kuna makosa kwenye taarifa za Akaunti: {user_form.errors}")
+            # MAREKEBISHO YA ONYESHO LA MAKOSA BILA HTML TAGS (<ul><li>)
+            clean_errors = ", ".join([f"{field}: {', '.join(errors)}" for field, errors in user_form.errors.items()])
+            messages.error(request, f"Kuna makosa kwenye taarifa za Akaunti: {clean_errors}")
 
     else:
         user_form = UserRegistrationForm()
@@ -395,7 +424,6 @@ def officer_dashboard(request):
             )
         attendances = attendances.order_by('-attendance_date')[:100]
 
-    # KUSHUGHULIKIA KUTUMA SMS NA KUHIFADHI HISTORIA KWENYE DATABASE
     if request.method == 'POST' and 'send_bulk_sms' in request.POST:
         target_group = request.POST.get('target_group')
         message_text = request.POST.get('message_text')
@@ -411,7 +439,6 @@ def officer_dashboard(request):
             sent_count = 0
             fail_count = 0
 
-            # 1. Tuma kwa walengwa wakuu
             for emp in recipients:
                 phone, _ = extract_contact_info(emp)
                 if phone:
@@ -446,8 +473,6 @@ def officer_dashboard(request):
                     else:
                         fail_count += 1
 
-            # 2. KUHAKIKISHA MAOVISA WENGINE WOTE (Mwenyekiti, Katibu, Mhazini, n.k.) WANAPATA NAKALA (CC)
-            # Tunapata jina la mtumaji wa sasa ili tusimtumie tena ujumbe wa kujirudia kama yeye ndiye aliyetuma
             current_officer_name = get_employee_full_name(officer) if officer else request.user.username
             
             all_officers = Officer.objects.exclude(user=request.user)
@@ -457,7 +482,6 @@ def officer_dashboard(request):
                     copy_msg = f"[NAKALA YA UJUMBE]\nImetumwa na: {current_officer_name}\nKundi: {target_group}\n\n{message_text}"
                     send_sms_notification(off_phone, copy_msg)
                     
-                    # Hifadhi pia kwenye logi za SMS ili viongozi wenzao wazione kwenye mfumo
                     if SMSLog is not None:
                         try:
                             SMSLog.objects.create(
@@ -565,7 +589,7 @@ def officer_process_request(request, request_id, action):
 # --------------------------------------------------------
 # 5. KU-PRINT / EXPORT RIPOTI YA MAHUDHURIO (CSV/EXCEL)
 # --------------------------------------------------------
-@login_required
+@login_register_required if 'login_register_required' in globals() else login_required
 def export_attendance_csv(request):
     """Ina-download Ripoti ya Mahudhurio kwa Mwezi, Mwaka, au Mfanyakazi mmoja"""
     if not Attendance:

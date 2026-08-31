@@ -13,4 +13,5 @@ urlpatterns = [
     
     # 3. Built-in Login & Logout ya Django (Inazuia NoReverseMatch ya 'logout')
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    
 ]
