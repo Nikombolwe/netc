@@ -35,6 +35,19 @@ except ImportError:
 
 
 # --------------------------------------------------------
+# HELPER FUNCTION FOR IP ADDRESS DETECTION (OFFICE NETWORK)
+# --------------------------------------------------------
+def get_client_ip(request):
+    """Inapata Real IP Address ya mteja aliyeunganishwa kwenye mfumo"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+# --------------------------------------------------------
 # HELPER FUNCTION FOR PHONE & EMAIL EXTRACTION
 # --------------------------------------------------------
 def extract_contact_info(obj):
@@ -70,9 +83,8 @@ def get_employee_full_name(employee):
 
 
 # --------------------------------------------------------
-# 1. USAJILI WA MTUMIAJI MPYA (ADD USER) - [IMEBORESHWA]
+# 1. USAJILI WA MTUMIAJI MPYA (ADD USER)
 # --------------------------------------------------------
-# @login_required  <-- IMESIMAMISHWA ILI KUZUIA REDIRECT YA LOGIN KILA UKIFUNGUA
 def add_user_view(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
@@ -145,7 +157,6 @@ def add_user_view(request):
             except Exception as e:
                 messages.error(request, str(e))
         else:
-            # MAREKEBISHO YA ONYESHO LA MAKOSA BILA HTML TAGS (<ul><li>)
             clean_errors = ", ".join([f"{field}: {', '.join(errors)}" for field, errors in user_form.errors.items()])
             messages.error(request, f"Kuna makosa kwenye taarifa za Akaunti: {clean_errors}")
 
@@ -165,16 +176,65 @@ def add_user_view(request):
 
 
 # --------------------------------------------------------
-# 2. EMPLOYEE DASHBOARD (KUTUMA OMBI + SMS)
+# 2. EMPLOYEE DASHBOARD (CHECK-IN/OUT + MAOMBI + SMS)
 # --------------------------------------------------------
 @login_required
 def employee_dashboard(request):
-    """Dashboard ya Mfanyakazi: Kutuma Maombi & Kuona Takwimu"""
+    """Dashboard ya Mfanyakazi: Check-In/Out ya Ndani ya Mtandao wa Ofisi & Kutuma Maombi"""
     user = request.user
     today = timezone.now().date()
     employee = getattr(user, 'employee_profile', None)
     
-    if request.method == 'POST' and RequestApplication is not None:
+    # KUSHUGHULIKIA KITENDO CHA CHECK-IN / CHECK-OUT KUTOKA DASHBOARD
+    if request.method == 'POST' and 'action_attendance' in request.POST:
+        action = request.POST.get('action_attendance')
+        client_ip = get_client_ip(request)
+        
+        # WEKA HAPA IP ADDRESS AU SUB-NET ZA OFISI YAKO
+        ALLOWED_IPS = ['192.168.1.', '10.0.0.', '127.0.0.1']
+        
+        ip_allowed = any(client_ip.startswith(net) for net in ALLOWED_IPS)
+        
+        if not ip_allowed:
+            messages.error(request, f"Huruhusiwi kufanya Check-in/out ukiwa nje ya mtandao wa ofisi! (IP yako: {client_ip})")
+            return redirect('employee_dashboard')
+
+        if Attendance is not None and employee:
+            current_time = timezone.now().time()
+            today_attendance = Attendance.objects.filter(employee=employee, attendance_date=today).first()
+
+            if action == 'check_in':
+                if today_attendance and today_attendance.check_in_time:
+                    messages.warning(request, "Tayari umeshafanya Check-In leo!")
+                else:
+                    if not today_attendance:
+                        Attendance.objects.create(
+                            employee=employee,
+                            attendance_date=today,
+                            check_in_time=current_time,
+                            status='PRESENT'
+                        )
+                    else:
+                        today_attendance.check_in_time = current_time
+                        today_attendance.save()
+                    messages.success(request, "Umeanza kazi rasmi (Check-In) mafanikio makubwa!")
+
+            elif action == 'check_out':
+                if not today_attendance or not today_attendance.check_in_time:
+                    messages.error(request, "Hujafanya Check-In bado kwa hiyo huwezi kufanya Check-Out!")
+                elif today_attendance.check_out_time:
+                    messages.warning(request, "Tayari umeshafanya Check-Out leo!")
+                else:
+                    today_attendance.check_out_time = current_time
+                    today_attendance.save()
+                    messages.success(request, "Umemaliza kazi salama (Check-Out)!")
+        else:
+            messages.error(request, "Wasifu wa mfanyakazi haujapatikana kwenye mfumo.")
+                    
+        return redirect('employee_dashboard')
+
+    # KUSHUGHULIKIA MAOMBI YA RUHUSA (LEAVE/LATE/ABSENCE REQUESTS)
+    if request.method == 'POST' and RequestApplication is not None and 'request_type' in request.POST:
         req_type = request.POST.get('request_type')
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date') or start_date
@@ -217,6 +277,7 @@ def employee_dashboard(request):
     balance = LeaveBalance.objects.filter(user=user).first() if LeaveBalance else None
     on_time_count = 0
     late_count = 0
+    today_attendance_record = None
 
     if Attendance is not None and employee:
         month_attendances = Attendance.objects.filter(
@@ -226,6 +287,7 @@ def employee_dashboard(request):
         )
         late_count = month_attendances.filter(Q(is_late=True) | Q(status='LATE')).count()
         on_time_count = month_attendances.filter(status='PRESENT', is_late=False).count()
+        today_attendance_record = month_attendances.filter(attendance_date=today).first()
 
     user_requests = RequestApplication.objects.filter(user=user) if RequestApplication is not None else []
     
@@ -234,6 +296,7 @@ def employee_dashboard(request):
         'balance': balance,
         'on_time_count': on_time_count,
         'late_count': late_count,
+        'today_attendance': today_attendance_record,
         'req_late_count': user_requests.filter(request_type='LATE_ARRIVAL').count() if user_requests else 0,
         'req_absence_count': user_requests.filter(request_type='ABSENCE').count() if user_requests else 0,
         'req_leave_count': user_requests.filter(request_type='ANNUAL_LEAVE').count() if user_requests else 0,
@@ -589,7 +652,7 @@ def officer_process_request(request, request_id, action):
 # --------------------------------------------------------
 # 5. KU-PRINT / EXPORT RIPOTI YA MAHUDHURIO (CSV/EXCEL)
 # --------------------------------------------------------
-@login_register_required if 'login_register_required' in globals() else login_required
+@login_required
 def export_attendance_csv(request):
     """Ina-download Ripoti ya Mahudhurio kwa Mwezi, Mwaka, au Mfanyakazi mmoja"""
     if not Attendance:
@@ -625,8 +688,9 @@ def export_attendance_csv(request):
         emp_name = get_employee_full_name(att.employee)
         emp_code = att.employee.employee_code if att.employee else "N/A"
         
-        t_in = getattr(att, 'time_in', None) or getattr(att, 'timestamp', None) or '-'
-        t_out = getattr(att, 'time_out', None) or '-'
+        # Hapa zimesahihishwa kutumia check_in_time na check_out_time kulingana na Database table yako
+        t_in = getattr(att, 'check_in_time', None) or '-'
+        t_out = getattr(att, 'check_out_time', None) or '-'
         
         writer.writerow([
             emp_code,

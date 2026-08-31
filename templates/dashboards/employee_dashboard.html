@@ -38,14 +38,14 @@
                 <p class="text-slate-500 text-sm mt-0.5">Karibu, <span class="font-semibold text-slate-700">{{ request.user.get_full_name|default:request.user.username }}</span></p>
             </div>
             
-            <!-- LOGOUT FORM ILIYOSAHIHISHWA KUWA POST -->
+            <!-- LOGOUT FORM - IMEBORESHWA: Ondoka / Log Out -->
             <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
                 {% csrf_token %}
                 <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white px-4.5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center gap-2 shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Ondoka
+                    Ondoka / Log Out
                 </button>
             </form>
         </div>
@@ -61,6 +61,53 @@
                 {% endfor %}
             </div>
         {% endif %}
+
+        <!-- SEHEMU YA CHECK-IN / CHECK-OUT YA NDANI YA MTANDAO WA OFISI -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 brand-gradient"></div>
+            <div class="max-w-xl mx-auto space-y-3">
+                <span class="text-2xl">⏰</span>
+                <h3 class="text-lg font-bold text-slate-800">Mahudhurio ya Leo (Daily Attendance)</h3>
+                <p class="text-slate-500 text-xs">Kitufe hiki kitafanya kazi tu ukiwa ndani ya mtandao au IP address ya ofisini kwenu.</p>
+                
+                <div class="pt-2">
+                    {% if today_attendance and today_attendance.check_in_time %}
+                        {% if today_attendance.check_out_time %}
+                            <div class="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-sm font-medium">
+                                🎉 Umemaliza kazi kwa siku ya leo! (Check-In: {{ today_attendance.check_in_time|time:"H:i" }} | Check-Out: {{ today_attendance.check_out_time|time:"H:i" }})
+                            </div>
+                        {% else %}
+                            <div class="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-medium mb-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span>✅</span>
+                                    <span>Check-In: <b class="font-bold">{{ today_attendance.check_in_time|time:"H:i:s" }}</b></span>
+                                </div>
+                                <!-- LIVE TIMER INAYOHESABU MUDA ULIOKAA KAZINI -->
+                                <div class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1 shadow-inner">
+                                    <span>⏱️ Muda Kazini:</span>
+                                    <span id="work-timer">00:00:00</span>
+                                </div>
+                            </div>
+                            <form method="POST" action="{% url 'employee_dashboard' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action_attendance" value="check_out">
+                                <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition text-sm shadow-md cursor-pointer inline-flex items-center gap-2">
+                                    <span>🚪 Check-Out (Toka Kazini)</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <form method="POST" action="{% url 'employee_dashboard' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action_attendance" value="check_in">
+                            <button type="submit" class="brand-gradient hover:opacity-95 text-white font-semibold px-6 py-3 rounded-xl transition text-sm shadow-md cursor-pointer inline-flex items-center gap-2">
+                                <span>📥 Check-In (Ingia Kazini)</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
         <!-- CARDS ZA MASALIO NA TAKWIMU -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -213,6 +260,37 @@
         </div>
 
     </div>
+
+    <!-- JAVASCRIPT YA KUHESABU MUDA (REAL-TIME STOPWATCH) -->
+    {% if today_attendance and today_attendance.check_in_time and not today_attendance.check_out_time %}
+    <script>
+        const checkInHours = parseInt("{{ today_attendance.check_in_time|date:'H' }}", 10);
+        const checkInMinutes = parseInt("{{ today_attendance.check_in_time|date:'i' }}", 10);
+        const checkInSeconds = parseInt("{{ today_attendance.check_in_time|date:'s' }}", 10);
+
+        const checkInTotalSeconds = (checkInHours * 3600) + (checkInMinutes * 60) + checkInSeconds;
+
+        function updateTimer() {
+            const d = new Date();
+            const currentTotalSeconds = (d.getHours() * 3600) + (d.getMinutes() * 60) + d.getSeconds();
+            
+            let elapsed = currentTotalSeconds - checkInTotalSeconds;
+            
+            if (elapsed < 0) {
+                elapsed += 86400; // Ikitokea imevuka usiku wa manane
+            }
+
+            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(elapsed % 60).padStart(2, '0');
+
+            document.getElementById('work-timer').innerText = `${hours}:${minutes}:${seconds}`;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    </script>
+    {% endif %}
 
 </body>
 </html>
