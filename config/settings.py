@@ -106,7 +106,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'netcadvent_smart_attendance_db',
         'USER': 'netcadvent_agape',
-        'PASSWORD': 'foddyn-teprar-zeRri4',
+        'PASSWORD': 'Attendence.smart.2026!',
         'HOST': '167.86.86.227',
         'PORT': '3306',
         'OPTIONS': {
