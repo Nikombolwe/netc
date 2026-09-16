@@ -198,27 +198,25 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
 
 
 # =====================================================================
-# HELPER TO DETECT USER TYPE & REDIRECT CORRECTLY (IMERAKEBISHWA)
+# HELPER TO DETECT USER TYPE & REDIRECT CORRECTLY (SALAMA KABISA)
 # =====================================================================
 def get_user_dashboard_redirect(user, employee=None):
     """
-    Husaidia kutambua kama mtumiaji ni Director/Admin au Mfanyakazi wa kawaida 
-    ili kumrudisha kwenye Dashboard yake sahihi bila kuleta 404.
+    Husaidia kutambua kwa usahihi kabisa kama mtumiaji ni Director/Admin 
+    au ni Mfanyakazi wa kawaida, na kumpeleka kwenye dashboard yake sahihi.
     """
     if not user.is_authenticated:
         return redirect('login')
     
     is_director = False
     
-    # Angalia kupitia Groups au kama ni Staff/Superuser
-    if user.groups.filter(name__icontains='Director').exists() or user.groups.filter(name__icontains='Administrator').exists() or user.groups.filter(name__icontains='Administrators').exists():
+    # 1. Angalia kupitia Django Groups rasmi za uongozi pekee au kama ni superuser
+    if user.is_superuser:
         is_director = True
-    elif user.is_superuser or user.is_staff:
-        is_director = True
-    elif hasattr(user, 'is_director') and user.is_director:
+    elif user.groups.filter(name__icontains='Director').exists() or user.groups.filter(name__icontains='Administrator').exists() or user.groups.filter(name__icontains='Administrators').exists():
         is_director = True
     
-    # Angalia kupitia Employee kama ni Head of Department au Director
+    # 2. Angalia kupitia Employee Profile kama ni Director au Mkuu wa Idara halisi
     if not is_director and employee:
         if getattr(employee, 'is_director', False):
             is_director = True
@@ -233,6 +231,7 @@ def get_user_dashboard_redirect(user, employee=None):
                 except Exception:
                     pass
 
+    # KAMA NI DIRECTOR AU ADMIN HALISI
     if is_director:
         try:
             return redirect('director_dashboard')
@@ -241,15 +240,17 @@ def get_user_dashboard_redirect(user, employee=None):
                 return redirect('employees:director_dashboard')
             except Exception:
                 return redirect('/employees/dashboard/director/')
+    
+    # KAMA NI MFANYAKAZI WA KAWADA (REGULAR EMPLOYEE) - HAPA NDIPO ILIPOSIMAMA SAHIHI
     else:
-        # Hapa tunatumعا URL zinazoeleweka kwenye mfumo wako kwaajili ya employee/dashboard
         try:
             return redirect('employee_dashboard')
         except Exception:
             try:
                 return redirect('dashboard:employee_dashboard')
             except Exception:
-                return redirect('/dashboard/')
+                # IMEREKEBISHWA: Inatua moja kwa moja kwenye URL sahihi ya mfanyakazi badala ya admin dashboard
+                return redirect('/employees/dashboard/employee/')
 
 
 # =====================================================================
