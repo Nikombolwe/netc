@@ -31,10 +31,10 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
-    <!-- SPLIT CONTAINER (KAMA PICHANI) -->
+    <!-- SPLIT CONTAINER -->
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 grid grid-cols-1 md:grid-cols-2">
         
-        <!-- LEFT BANNER SIDE (KAMA PICHANI) -->
+        <!-- LEFT BANNER SIDE -->
         <div class="bg-gradient-to-br from-[#4b207f] via-[#2f557f] to-[#3e8391] p-8 md:p-10 flex flex-col justify-between text-white relative">
             <!-- Decorative overlay -->
             <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
@@ -47,7 +47,7 @@
                 <span class="font-bold tracking-widest text-xs uppercase text-slate-200">Smart Attendance</span>
             </div>
 
-            <!-- Welcome Text (Kama Picha) -->
+            <!-- Welcome Text -->
             <div class="relative z-10 my-auto py-8">
                 <h2 class="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">Habari!<br>Karibu tena!</h2>
                 <p class="text-slate-200 text-sm leading-relaxed">
@@ -81,8 +81,8 @@
                 </div>
             {% endif %}
 
-            <!-- LOGIN FORM (FIELDS ZILE ZILE) -->
-            <form method="POST" action="{% url 'login' %}" class="space-y-4">
+            <!-- LOGIN FORM (Imeboreshwa action yake kutumia namespace ya authentication) -->
+            <form method="POST" action="{% url 'authentication:login' %}" class="space-y-4">
                 {% csrf_token %}
 
                 <!-- AINA YA MTUMIAJI (ROLE DROPDOWN) -->
@@ -99,7 +99,7 @@
                 <!-- USERNAME -->
                 <div>
                     <label for="username" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Username (Jina la Mtumiaji) *</label>
-                    <input type="text" id="username" name="username" autocomplete="username" required placeholder="Ingiza username" 
+                    <input type="text" id="username" name="username" autocomplete="username" required autofocus placeholder="Ingiza username" 
                            class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-sm focus-custom transition">
                 </div>
 
@@ -112,7 +112,7 @@
 
                 <!-- BUTTON -->
                 <button type="submit" 
-                        class="w-full btn-gradient text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm mt-2">
+                        class="w-full btn-gradient text-white font-bold py-3.5 px-4 rounded-xl shadow-md text-sm mt-2 cursor-pointer">
                     Ingia Mfumoni (Login)
                 </button>
             </form>

@@ -1,296 +1,357 @@
-<!DOCTYPE html>
-<html lang="sw">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Dashboard - Smart Attendance</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --primary-emperor: #4b207f;
-            --secondary-denim: #2f557f;
-            --accent-ming: #3e8391;
-        }
-        .brand-gradient {
-            background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
-        }
-        .custom-card-hover {
-            transition: all 0.25s ease;
-        }
-        .custom-card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(75, 32, 127, 0.08);
-        }
-    </style>
-</head>
-<body class="bg-slate-100/70 min-h-screen p-4 md:p-8 font-sans">
+{% extends 'base.html' %}
+{% load static %}
 
-    <div class="max-w-7xl mx-auto space-y-6">
+{% block extra_css %}
+<style>
+    :root {
+        --primary-emperor: #4b207f;
+        --secondary-denim: #2f557f;
+        --accent-ming: #3e8391;
+    }
+    .brand-gradient {
+        background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+    }
+    .custom-card-hover {
+        transition: all 0.25s ease;
+    }
+    .custom-card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(75, 32, 127, 0.08);
+    }
+    .focus-custom:focus {
+        outline: none;
+        border-color: var(--primary-emperor);
+        box-shadow: 0 0 0 3px rgba(75, 32, 127, 0.12);
+    }
+    .btn-checkin {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        transition: all 0.25s ease;
+    }
+    .btn-checkin:hover {
+        opacity: 0.93;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25);
+    }
+    .btn-checkout {
+        background: linear-gradient(135deg, #4b207f 0%, #2f557f 100%);
+        transition: all 0.25s ease;
+    }
+    .btn-checkout:hover {
+        opacity: 0.93;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(75, 32, 127, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
         
-        <!-- HEADER -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 gap-4">
-            <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#4b207f] animate-pulse"></span>
-                    <span class="text-xs font-bold text-[#4b207f] uppercase tracking-wider">Mfanyakazi Portal</span>
-                </div>
-                <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-800 tracking-tight">Dashboard ya Mfanyakazi</h1>
-                <p class="text-slate-500 text-sm mt-0.5">Karibu, <span class="font-semibold text-slate-700">{{ request.user.get_full_name|default:request.user.username }}</span></p>
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#4b207f] animate-pulse"></span>
+                <span class="text-xs font-bold text-[#4b207f] uppercase tracking-wider">Mfanyakazi Portal</span>
             </div>
+            <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-800 tracking-tight">Dashboard ya Mfanyakazi</h1>
+            <p class="text-slate-500 text-sm mt-0.5">Karibu, <span class="font-semibold text-slate-700">{{ request.user.get_full_name|default:request.user.username }}</span></p>
+        </div>
+        
+        <!-- LOGOUT FORM -->
+        <form action="{% url 'authentication:logout' %}" method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white px-4.5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Ondoka / Log Out
+            </button>
+        </form>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm font-medium shadow-sm {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %} flex items-center gap-2">
+                    <span>{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+                    <div>{{ message }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- SEHEMU YA CHECK-IN / CHECK-OUT -->
+    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200/80 relative overflow-hidden">
+        <div class="absolute top-0 left-0 right-0 h-1.5 brand-gradient"></div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             
-            <!-- LOGOUT FORM - IMEBORESHWA: Ondoka / Log Out -->
-            <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
+            <!-- Maelezo ya Mahudhurio na Tarehe -->
+            <div class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center border border-purple-100 text-2xl shadow-sm">
+                    ⏱️
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 tracking-tight">Mahudhurio ya Leo</h3>
+                    <p class="text-slate-500 text-sm mt-1">
+                        Rekodi kuingia au kutoka kwako kwa urahisi. Weka code yako ya mfanyakazi (au Fingerprint ID) kufanya check-in au check-out.
+                    </p>
+                </div>
+                <div class="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 py-2 px-4 rounded-xl text-xs font-semibold text-slate-700 shadow-sm">
+                    📅 Leo: {% now "l, j F Y" %}
+                </div>
+            </div>
+
+            <!-- Fomu ya Check-In/Out -->
+            <div class="bg-slate-50/70 p-6 rounded-2xl border border-slate-200/60">
+                <form method="POST" action="{% url 'attendance:employee_checkin' %}" class="space-y-4" id="attendance-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" id="form-action-input" value="">
+
+                    <!-- Sehemu ya Kuweka Employee Code -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Namba ya Utambulisho (Employee Code) *</label>
+                        <input type="text" name="employee_code" required value="{{ employee.employee_code|default:'' }}" placeholder="Mfano: EMP001" class="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition font-medium text-slate-700">
+                    </div>
+
+                    <!-- Hali ya Leo ya Mfanyakazi -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200/80 text-center">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Hali ya Mahudhurio ya Leo</p>
+                        <p class="text-sm font-bold text-slate-700">
+                            {% if today_attendance %}
+                                {% if today_attendance.check_in_time and not today_attendance.check_out_time %}
+                                    <span class="text-emerald-600">Umeingia (Check In): {{ today_attendance.check_in_time|time:"H:i" }}</span>
+                                {% elif today_attendance.check_in_time and today_attendance.check_out_time %}
+                                    <span class="text-purple-600">Umemaliza kazi kwa leo (Checked Out)</span>
+                                {% else %}
+                                    <span class="text-slate-500">Bado hujajaza mahudhurio ya leo</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-slate-500">Bado hujajaza mahudhurio ya leo</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Vitufe vya Action -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <button type="button" 
+                                onclick="submitAttendance('check_in')"
+                                class="w-full btn-checkin text-white font-bold py-3.5 px-3 rounded-xl shadow-md text-sm flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <span>📥 Check In</span>
+                        </button>
+
+                        <button type="button" 
+                                onclick="submitAttendance('check_out')"
+                                class="w-full btn-checkout text-white font-bold py-3.5 px-3 rounded-xl shadow-md text-sm flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <span>📤 Check Out</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Live Clock Footer -->
+                <div class="mt-5 pt-4 border-t border-slate-200/60 text-center">
+                    <p class="text-xs text-slate-400 font-medium">Muda wa Sasa (System Time):</p>
+                    <p id="live-clock" class="text-lg font-mono font-bold text-slate-700 mt-0.5">--:--:--</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CARDS ZA MASALIO NA TAKWIMU -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Salio la Likizo -->
+        <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-blue-600"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Siku za Likizo Zilizobaki</p>
+            <h2 class="text-3xl font-extrabold text-blue-600">
+                {% if balance %}
+                    {% if balance.annual_leave_days %}
+                        {{ balance.annual_leave_days }}
+                    {% elif balance.days_remaining %}
+                        {{ balance.days_remaining }}
+                    {% else %}
+                        0
+                    {% endif %}
+                {% else %}
+                    0
+                {% endif %}
+                <span class="text-lg font-semibold text-slate-600">Siku</span>
+            </h2>
+        </div>
+
+        <!-- Ruhusa za Dharura -->
+        <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ruhusa za Dharura Zilizobaki</p>
+            <h2 class="text-3xl font-extrabold text-amber-600">
+                {% if balance %}
+                    {% if balance.emergency_leave_count %}
+                        {{ balance.emergency_leave_count }}
+                    {% elif balance.emergency_days %}
+                        {{ balance.emergency_days }}
+                    {% else %}
+                        0
+                    {% endif %}
+                {% else %}
+                    0
+                {% endif %}
+                <span class="text-lg font-semibold text-slate-600">Mara</span>
+            </h2>
+        </div>
+
+        <!-- Wahi Kazini -->
+        <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kufika kwa Wakati (Mwezi Huu)</p>
+            <h2 class="text-3xl font-extrabold text-emerald-600">{{ on_time_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
+        </div>
+
+        <!-- Kuchelewa -->
+        <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-rose-600"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kuchelewa (Mwezi Huu)</p>
+            <h2 class="text-3xl font-extrabold text-rose-600">{{ late_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
+        </div>
+
+    </div>
+
+    <!-- SEHEMU YA MAOMBI NA MUHTASARI -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- FORMU YA KUOMBA RUHUSA / LIKIZO -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-1 h-fit">
+            <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-100">
+                <span class="p-2 rounded-xl bg-purple-50 text-[#4b207f]">📝</span>
+                <h3 class="text-lg font-bold text-slate-800">Omba Ruhusa / Likizo</h3>
+            </div>
+
+            <form method="POST" action="{{ request.path }}" class="space-y-4">
                 {% csrf_token %}
-                <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white px-4.5 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer flex items-center gap-2 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Ondoka / Log Out
+                <input type="hidden" name="action" value="submit_request">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Aina ya Ombi *</label>
+                    <select name="request_type" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition font-medium text-slate-700">
+                        <option value="LATE_ARRIVAL">Kuchelewa Kuingia Kazini</option>
+                        <option value="ABSENCE">Ruhusa ya Kutohudhuria Kazini</option>
+                        <option value="SPECIAL_DUTY">Kazi Maalumu Nje ya Ofisi</option>
+                        <option value="ANNUAL_LEAVE">Likizo ya Mwaka</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Anza *</label>
+                        <input type="date" name="start_date" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Mwisho</label>
+                        <input type="date" name="end_date" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sababu *</label>
+                    <textarea name="reason" rows="3" required placeholder="Eleza sababu ya ombi lako..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700"></textarea>
+                </div>
+
+                <button type="submit" class="w-full brand-gradient hover:opacity-95 text-white font-semibold py-3.5 rounded-xl transition text-sm shadow-md cursor-pointer flex items-center justify-center gap-2">
+                    <span>Tuma Ombi</span>
                 </button>
             </form>
         </div>
 
-        <!-- NOTIFICATIONS -->
-        {% if messages %}
-            <div class="space-y-2">
-                {% for message in messages %}
-                    <div class="p-4 rounded-xl text-sm font-medium shadow-sm {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %} flex items-center gap-2">
-                        <span>{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
-                        <div>{{ message }}</div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <!-- SEHEMU YA CHECK-IN / CHECK-OUT YA NDANI YA MTANDAO WA OFISI -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 text-center relative overflow-hidden">
-            <div class="absolute top-0 left-0 right-0 h-1.5 brand-gradient"></div>
-            <div class="max-w-xl mx-auto space-y-3">
-                <span class="text-2xl">⏰</span>
-                <h3 class="text-lg font-bold text-slate-800">Mahudhurio ya Leo (Daily Attendance)</h3>
-                <p class="text-slate-500 text-xs">Kitufe hiki kitafanya kazi tu ukiwa ndani ya mtandao au IP address ya ofisini kwenu.</p>
-                
-                <div class="pt-2">
-                    {% if today_attendance and today_attendance.check_in_time %}
-                        {% if today_attendance.check_out_time %}
-                            <div class="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-sm font-medium">
-                                🎉 Umemaliza kazi kwa siku ya leo! (Check-In: {{ today_attendance.check_in_time|time:"H:i" }} | Check-Out: {{ today_attendance.check_out_time|time:"H:i" }})
-                            </div>
-                        {% else %}
-                            <div class="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-medium mb-3 flex flex-col sm:flex-row items-center justify-between gap-2">
-                                <div class="flex items-center gap-1.5">
-                                    <span>✅</span>
-                                    <span>Check-In: <b class="font-bold">{{ today_attendance.check_in_time|time:"H:i:s" }}</b></span>
-                                </div>
-                                <!-- LIVE TIMER INAYOHESABU MUDA ULIOKAA KAZINI -->
-                                <div class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-bold tracking-wider flex items-center gap-1 shadow-inner">
-                                    <span>⏱️ Muda Kazini:</span>
-                                    <span id="work-timer">00:00:00</span>
-                                </div>
-                            </div>
-                            <form method="POST" action="{% url 'employee_dashboard' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="action_attendance" value="check_out">
-                                <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-6 py-3 rounded-xl transition text-sm shadow-md cursor-pointer inline-flex items-center gap-2">
-                                    <span>🚪 Check-Out (Toka Kazini)</span>
-                                </button>
-                            </form>
-                        {% endif %}
-                    {% else %}
-                        <form method="POST" action="{% url 'employee_dashboard' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="action_attendance" value="check_in">
-                            <button type="submit" class="brand-gradient hover:opacity-95 text-white font-semibold px-6 py-3 rounded-xl transition text-sm shadow-md cursor-pointer inline-flex items-center gap-2">
-                                <span>📥 Check-In (Ingia Kazini)</span>
-                            </button>
-                        </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- CARDS ZA MASALIO NA TAKWIMU -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- MUHTASARI WA MAOMBI & HISTORIA -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-2 space-y-6">
             
-            <!-- Salio la Likizo -->
-            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 left-0 right-0 h-1.5 bg-blue-600"></div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Siku za Likizo Zilizobaki</p>
-                <h2 class="text-3xl font-extrabold text-blue-600">{{ balance.annual_leave_days|default:"0" }} <span class="text-lg font-semibold text-slate-600">Siku</span></h2>
-            </div>
-
-            <!-- Ruhusa za Dharura -->
-            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ruhusa za Dharura Zilizobaki</p>
-                <h2 class="text-3xl font-extrabold text-amber-600">{{ balance.emergency_leave_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
-            </div>
-
-            <!-- Wahi Kazini -->
-            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600"></div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kufika kwa Wakati (Mwezi Huu)</p>
-                <h2 class="text-3xl font-extrabold text-emerald-600">{{ on_time_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
-            </div>
-
-            <!-- Kuchelewa -->
-            <div class="custom-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
-                <div class="absolute top-0 left-0 right-0 h-1.5 bg-rose-600"></div>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kuchelewa (Mwezi Huu)</p>
-                <h2 class="text-3xl font-extrabold text-rose-600">{{ late_count|default:"0" }} <span class="text-lg font-semibold text-slate-600">Mara</span></h2>
-            </div>
-
-        </div>
-
-        <!-- SEHEMU YA MAOMBI NA MUHTASARI -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- FORMU YA KUOMBA RUHUSA / LIKIZO -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-1 h-fit">
-                <div class="flex items-center gap-2 mb-5 pb-3 border-b border-slate-100">
-                    <span class="p-2 rounded-xl bg-purple-50 text-[#4b207f]">📝</span>
-                    <h3 class="text-lg font-bold text-slate-800">Omba Ruhusa / Likizo</h3>
-                </div>
-
-                <form method="POST" action="{% url 'employee_dashboard' %}" class="space-y-4">
-                    {% csrf_token %}
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Aina ya Ombi *</label>
-                        <select name="request_type" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition font-medium text-slate-700">
-                            <option value="LATE_ARRIVAL">Kuchelewa Kuingia Kazini</option>
-                            <option value="ABSENCE">Ruhusa ya Kutohudhuria Kazini</option>
-                            <option value="SPECIAL_DUTY">Kazi Maalumu Nje ya Ofisi</option>
-                            <option value="ANNUAL_LEAVE">Likizo ya Mwaka</option>
-                        </select>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Muhtasari wa Maombi Yako</h3>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kuchelewa</p>
+                        <p class="text-2xl font-extrabold text-slate-700">{{ req_late_count|default:"0" }}</p>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Anza *</label>
-                            <input type="date" name="start_date" required class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Tarehe ya Mwisho</label>
-                            <input type="date" name="end_date" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700">
-                        </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kutohudhuria</p>
+                        <p class="text-2xl font-extrabold text-slate-700">{{ req_absence_count|default:"0" }}</p>
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sababu *</label>
-                        <textarea name="reason" rows="3" required placeholder="Eleza sababu ya ombi lako..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#4b207f] focus:border-[#4b207f] outline-none transition text-slate-700"></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full brand-gradient hover:opacity-95 text-white font-semibold py-3.5 rounded-xl transition text-sm shadow-md cursor-pointer flex items-center justify-center gap-2">
-                        <span>Tuma Ombi</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- MUHTASARI WA MAOMBI & HISTORIA -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 lg:col-span-2 space-y-6">
-                
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800 mb-4">Muhtasari wa Maombi Yako</h3>
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kuchelewa</p>
-                            <p class="text-2xl font-extrabold text-slate-700">{{ req_late_count|default:"0" }}</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kutohudhuria</p>
-                            <p class="text-2xl font-extrabold text-slate-700">{{ req_absence_count|default:"0" }}</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Likizo</p>
-                            <p class="text-2xl font-extrabold text-slate-700">{{ req_leave_count|default:"0" }}</p>
-                        </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Likizo</p>
+                        <p class="text-2xl font-extrabold text-slate-700">{{ req_leave_count|default:"0" }}</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- HISTORIA YA MAOMBI -->
-                <div>
-                    <h4 class="font-bold text-slate-800 mb-3 text-base">Maombi ya Hivi Karibuni</h4>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-slate-600 border-collapse">
-                            <thead class="text-xs text-slate-400 uppercase bg-slate-50/80 tracking-wider">
-                                <tr>
-                                    <th class="py-3 px-4 rounded-l-xl">Aina</th>
-                                    <th class="py-3 px-4">Tarehe</th>
-                                    <th class="py-3 px-4 rounded-r-xl">Hali</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                {% for req in recent_requests %}
-                                <tr class="hover:bg-slate-50/70 transition">
-                                    <td class="py-3.5 px-4 font-semibold text-slate-800">
-                                        {{ req.get_request_type_display|default:req.request_type }}
-                                    </td>
-                                    <td class="py-3.5 px-4 text-slate-600 text-xs font-medium">
-                                        {{ req.start_date|date:"d M Y" }}
-                                        {% if req.end_date and req.end_date != req.start_date %}
-                                            - {{ req.end_date|date:"d M Y" }}
-                                        {% endif %}
-                                    </td>
-                                    <td class="py-3.5 px-4">
-                                        <span class="px-3 py-1 rounded-lg text-xs font-bold inline-block
-                                            {% if req.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
-                                            {% elif req.status == 'REJECTED' %}bg-rose-100 text-rose-800
-                                            {% else %}bg-amber-100 text-amber-800{% endif %}">
-                                            {{ req.get_status_display|default:req.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="3" class="py-8 text-center text-slate-400 text-sm">
-                                        <div class="flex flex-col items-center justify-center space-y-1">
-                                            <span>📭</span>
-                                            <p>Hujatuma ombi lolote bado.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- HISTORIA YA MAOMBI -->
+            <div>
+                <h4 class="font-bold text-slate-800 mb-3 text-base">Maombi ya Hivi Karibuni</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600 border-collapse">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-50/80 tracking-wider">
+                            <tr>
+                                <th class="py-3 px-4 rounded-l-xl">Aina</th>
+                                <th class="py-3 px-4">Tarehe</th>
+                                <th class="py-3 px-4 rounded-r-xl">Hali</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for req in recent_requests %}
+                            <tr class="hover:bg-slate-50/70 transition">
+                                <td class="py-3.5 px-4 font-semibold text-slate-800">
+                                    {{ req.get_request_type_display|default:req.request_type }}
+                                </td>
+                                <td class="py-3.5 px-4 text-slate-600 text-xs font-medium">
+                                    {{ req.start_date|date:"d M Y" }}
+                                    {% if req.end_date and req.end_date != req.start_date %}
+                                        - {{ req.end_date|date:"d M Y" }}
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="px-3 py-1 rounded-lg text-xs font-bold inline-block
+                                        {% if req.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+                                        {% elif req.status == 'REJECTED' %}bg-rose-100 text-rose-800
+                                        {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                        {{ req.get_status_display|default:req.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="py-8 text-center text-slate-400 text-sm">
+                                    <div class="flex flex-col items-center justify-center space-y-1">
+                                        <span>📭</span>
+                                        <p>Hujatuma ombi lolote bado.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-
             </div>
 
         </div>
 
     </div>
 
-    <!-- JAVASCRIPT YA KUHESABU MUDA (REAL-TIME STOPWATCH) -->
-    {% if today_attendance and today_attendance.check_in_time and not today_attendance.check_out_time %}
-    <script>
-        const checkInHours = parseInt("{{ today_attendance.check_in_time|date:'H' }}", 10);
-        const checkInMinutes = parseInt("{{ today_attendance.check_in_time|date:'i' }}", 10);
-        const checkInSeconds = parseInt("{{ today_attendance.check_in_time|date:'s' }}", 10);
+</div>
 
-        const checkInTotalSeconds = (checkInHours * 3600) + (checkInMinutes * 60) + checkInSeconds;
+<script>
+    function submitAttendance(actionType) {
+        document.getElementById('form-action-input').value = actionType;
+        document.getElementById('attendance-form').submit();
+    }
 
-        function updateTimer() {
-            const d = new Date();
-            const currentTotalSeconds = (d.getHours() * 3600) + (d.getMinutes() * 60) + d.getSeconds();
-            
-            let elapsed = currentTotalSeconds - checkInTotalSeconds;
-            
-            if (elapsed < 0) {
-                elapsed += 86400; // Ikitokea imevuka usiku wa manane
-            }
-
-            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-            const seconds = String(elapsed % 60).padStart(2, '0');
-
-            document.getElementById('work-timer').innerText = `${hours}:${minutes}:${seconds}`;
-        }
-
-        updateTimer();
-        setInterval(updateTimer, 1000);
-    </script>
-    {% endif %}
-
-</body>
-</html>
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour12: true });
+        document.getElementById('live-clock').textContent = timeString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+{% endblock %}

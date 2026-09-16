@@ -110,6 +110,7 @@ DATABASES = {
         'HOST': '167.86.86.227',
         'PORT': '3306',
         'OPTIONS': {
+            # Hapa ndipo tulipotengeneza mabadiliko ya kuifunga database isome saa za EAT moja kwa moja
             'init_command': "SET time_zone = '+03:00', sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4',
         },
@@ -135,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ----------------------------------------------------------------------
-# 9. INTERNATIONALIZATION
+# 9. INTERNATIONALIZATION & TIMEZONE (IMEBORESHWA)
 # ----------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 
@@ -143,6 +144,7 @@ TIME_ZONE = 'Africa/Dar_es_Salaam'  # East Africa Time Zone (EAT)
 
 USE_I18N = True
 
+# Lazima iwe True ili Django iweze kutumia TIME_ZONE hapo juu kusawazisha muda
 USE_TZ = True
 
 # ----------------------------------------------------------------------

@@ -39,9 +39,12 @@
             <button id="refresh-logs-btn" onclick="window.location.reload();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 border border-slate-200">
                 🔄 Refresh
             </button>
-            <a href="{% url 'add_user' %}" class="brand-gradient text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:opacity-95 transition flex items-center gap-1.5">
+            
+            <!-- IMEBORESHWA HAPA: Kutumia namespace ya employees -->
+            <a href="{% url 'employees:add_user' %}" class="brand-gradient text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:opacity-95 transition flex items-center gap-1.5">
                 + Ongeza Mfanyakazi
             </a>
+            
             <a href="#" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition">
                 Manual Entry
             </a>

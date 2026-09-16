@@ -2,11 +2,14 @@ from django.urls import path
 from django.contrib.auth.views import LogoutView
 from . import views
 
+# Muhimu sana ili Django itambue njia zako kupitia namespace ya 'employees'
+app_name = 'employees'
+
 urlpatterns = [
     # Usajili wa Watumiaji
     path('add-user/', views.add_user_view, name='add_user'),
     
-    # Dashboards za Aina Tatu za Watumiaji
+    # Dashboards za Aina Tatu za Watumiaji (Zinajumuisha Check-In/Out ya Mfanyakazi)
     path('dashboard/employee/', views.employee_dashboard, name='employee_dashboard'),
     path('dashboard/director/', views.director_dashboard, name='director_dashboard'),
     path('dashboard/officer/', views.officer_dashboard, name='officer_dashboard'),
@@ -20,6 +23,6 @@ urlpatterns = [
     # Njia ya Kutoa Ripoti (CSV Export)
     path('export-attendance/', views.export_attendance_csv, name='export_attendance_csv'),
 
-    # Njia ya Kutoka (Logout) - Imeongezwa ili kitufe cha Logout kifanye kazi vizuri
+    # Njia ya Kutoka (Logout)
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
 ]

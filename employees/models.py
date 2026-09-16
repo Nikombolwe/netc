@@ -90,7 +90,7 @@ class Employee(models.Model):
     def full_name(self):
         """
         Inachukua majina kutoka Employee profile; kama yako tupu, 
-        inachukua kutoka User model au kurudisha Username.
+        inchukua kutoka User model au kurudisha Username.
         """
         fname = self.first_name or ""
         lname = self.last_name or ""
@@ -153,3 +153,29 @@ class Officer(models.Model):
             name = f"{fname} {lname}".strip()
 
         return name if name else (self.user.username if self.user else f"Officer #{self.id}")
+
+
+# --------------------------------------------------------
+# 5. LEAVE BALANCE (Imeongezwa kuzuia error ya days_remaining)
+# --------------------------------------------------------
+class LeaveBalance(models.Model):
+    employee = models.ForeignKey(
+        Employee, 
+        on_delete=models.CASCADE, 
+        related_name='leave_balances'
+    )
+    annual_leave_days = models.PositiveIntegerField(default=0)
+    emergency_leave_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'leave_balances'
+
+    def __str__(self):
+        return f"Balance for {self.employee.full_name}"
+
+    @property
+    def days_remaining(self):
+        """Inarudisha siku zilizobaki za likizo kuzuia error kwenye template."""
+        return self.annual_leave_days

@@ -178,7 +178,7 @@
     .custom-table { width: 100%; border-collapse: collapse; }
     .custom-table th { background-color: #f8fafc; color: #475569; text-align: left; padding: 14px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
     .custom-table td { padding: 14px 16px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
-    .custom-table tr:hover td { background-color: #f8fafc/50; }
+    .custom-table tr:hover td { background-color: rgba(248, 250, 252, 0.5); }
 
     .request-item {
         background: #fdfcff;
@@ -242,7 +242,8 @@
                 📅 Leo ni: <strong style="color: #334155;">{% now "j F Y" %}</strong>
             </div>
             
-            <form method="POST" action="{% url 'logout' %}" style="margin: 0; display: inline-block;">
+            <!-- LOGOUT FORM (Imebadilishwa kwenda authentication:logout) -->
+            <form method="POST" action="{% url 'authentication:logout' %}" style="margin: 0; display: inline-block;">
                 {% csrf_token %}
                 <button type="submit" class="btn-logout-custom">
                     🚪 Logout
@@ -346,8 +347,8 @@
                             <div style="margin-top: 2px;"><strong>Sababu:</strong> {{ req.reason }}</div>
                         </div>
                         <div class="action-btns">
-                            <a href="{% url 'officer_process_request' req.id 'approve' %}" class="btn-approve">✓ Kubali (Approve)</a>
-                            <a href="{% url 'officer_process_request' req.id 'reject' %}" class="btn-reject">✕ Kataa (Reject)</a>
+                            <a href="{% url 'employees:officer_process_request' req.id 'approve' %}" class="btn-approve">✓ Kubali (Approve)</a>
+                            <a href="{% url 'employees:officer_process_request' req.id 'reject' %}" class="btn-reject">✕ Kataa (Reject)</a>
                         </div>
                     </div>
                     {% endfor %}
@@ -365,7 +366,7 @@
     <div class="panel-card">
         <div class="panel-title">
             <span>📈 Taarifa za Mahudhurio ya Watumishi Wote</span>
-            <a href="{% url 'export_attendance_csv' %}?month={{ selected_month }}&year={{ selected_year }}&employee={{ selected_employee }}" class="btn-print">
+            <a href="{% url 'employees:export_attendance_csv' %}?month={{ selected_month }}&year={{ selected_year }}&employee={{ selected_employee }}" class="btn-print">
                 🖨️ Print / Pakua Ripoti (Excel/CSV)
             </a>
         </div>

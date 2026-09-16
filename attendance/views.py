@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from django.apps import apps
 
 from employees.models import Employee, Officer
 from .models import Attendance
@@ -32,8 +33,7 @@ def send_sms_notification(phone_number, message_text):
     if phone_number.startswith('0'):
         phone_number = '255' + phone_number[1:]
 
-    # SDASMS API Token
-    API_TOKEN = "165|f2IywyWAhT8qG7TxcGXZKn9cO1jsNq7X4Kg1gcu66db2f0fc"
+    API_TOKEN = "167|2eiLhXwLf3x4SEb1pACaQiCMiKpUXh2RcEuR4tQhf9be8aad"
     URL = "https://my.sdasms.com/api/v3/sms/send"
 
     headers = {
@@ -45,11 +45,10 @@ def send_sms_notification(phone_number, message_text):
     payload = {
         "recipient": phone_number,
         "message": message_text,
-        "sender_id": "NETC HQ"  # Sender ID iliyoidhinishwa
+        "sender_id": "NETC HQ"
     }
 
     try:
-        # verify=False imeongezwa kuzuia SSL Certificate verification error
         response = requests.post(URL, json=payload, headers=headers, timeout=10, verify=False)
         res_data = response.json()
         print(f"[SDASMS Response to {phone_number}]: {res_data}")
@@ -89,7 +88,6 @@ def extract_phone_and_email(obj):
     phone = None
     email = None
 
-    # 1. Kutafuta direct field za phone na email
     for p_attr in ['phone_number', 'phone', 'mobile', 'telephone']:
         if hasattr(obj, p_attr) and getattr(obj, p_attr):
             phone = getattr(obj, p_attr)
@@ -100,7 +98,6 @@ def extract_phone_and_email(obj):
             email = getattr(obj, e_attr)
             break
 
-    # 2. Kama zipo ndani ya relationship ya Django User
     if hasattr(obj, 'user') and obj.user:
         if not phone:
             for p_attr in ['phone_number', 'phone', 'mobile']:
@@ -122,13 +119,10 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
     full_name = f"{employee.first_name} {employee.last_name}"
     time_str = now_datetime.strftime('%I:%M %p')
 
-    # Extract taarifa za mfanyakazi mwenyewe
     emp_phone, emp_email = extract_phone_and_email(employee)
 
     # 1. MFANYAKAZI AMECHELEWA (LATE)
     if attendance_record.status == 'LATE':
-        
-        # Hesabu idadi ya siku alizochelewa mwezi huu
         late_count = Attendance.objects.filter(
             employee=employee,
             attendance_date__month=current_month,
@@ -136,148 +130,62 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
             status='LATE'
         ).count()
 
-        # A. SMS na Email kwa Mfanyakazi Mwenyewe (Iwe ni Director au Mfanyakazi wa kawaida)
-        emp_msg = f"Habari {full_name}, tunatumaini unaendelea vizuri. Leo umeingia kazini saa {time_str}, baada ya muda rasmi wa kufika ambao ni 08:00 AM. Tunakukumbusha kwa upendo umuhimu wa kuwahi kazini na kutunza muda. Tunaamini utaendelea kujitahidi kufanya vizuri katika utekelezaji wa majukumu yako. Bwana akubariki katika kazi zako. Maranatha!"
-
+        emp_msg = f"Habari {full_name}, tunatumaini unaendelea vizuri. Leo umeingia kazini saa {time_str}, baada ya muda rasmi wa kufika ambao ni 08:00 AM. Tunakukumbusha kwa upendo umuhimu wa kuwahi kazini na kutunza muda. Maranatha!"
         send_sms_notification(emp_phone, emp_msg)
 
         emp_email_subject = f"TAARIFA YA KUCHELEWA KAZINI - {today.strftime('%d/%m/%Y')}"
-
         emp_email_body = (
-    f"Habari {full_name},\n\n"
-
-    f"Unataarifiwa kuwa leo tarehe {today.strftime('%d-%m-%Y')} "
-    f"umeingia kazini saa {time_str}, baada ya muda rasmi wa kuanza kazi "
-    f"ambao ni saa 08:00 AM.\n\n"
-
-    f"Kumbukumbu za mfumo wa mahudhurio zinaonyesha kuwa hii ni mara yako "
-    f"ya ({late_count}) kuchelewa katika mwezi wa {today.strftime('%B %Y')}.\n\n"
-
-    f"Unakumbushwa kuzingatia muda wa kazi na kuhakikisha unafika kazini "
-    f"kwa wakati. Kuchelewa mara kwa mara kunaathiri utekelezaji wa majukumu "
-    f"na ufanisi wa kazi za taasisi.\n\n"
-
-    f"Tafadhali chukua hatua stahiki kuhakikisha hali hii haijirudii.\n\n"
-
-    f"Wako katika utumishi,\n"
-    f"Katibu wa Conference\n"
-    f"NETC HQ"
-)
+            f"Habari {full_name},\n\n"
+            f"Unataarifiwa kuwa leo tarehe {today.strftime('%d-%m-%Y')} "
+            f"umeingia kazini saa {time_str}, baada ya muda rasmi wa kuanza kazi "
+            f"ambao ni saa 08:00 AM.\n\n"
+            f"Kumbukumbu za mfumo zinaonyesha kuwa hii ni mara yako ya ({late_count}) kuchelewa katika mwezi wa {today.strftime('%B %Y')}.\n\n"
+            f"Tafadhali chukua hatua stahiki kuhakikisha hali hii haijirudii.\n\n"
+            f"Wako katika utumishi,\nKatibu wa Conference\nNETC HQ"
+        )
         send_email_notification(emp_email_subject, emp_email_body, [emp_email])
 
-        # B. SMS na Email kwa Director / Mkuu wa Idara
         director_obj = None
-
         if hasattr(employee, 'department') and employee.department:
             dept = employee.department
-            
-            # 1. Jaribu kupata Director kutoka kwenye Idara
             for attr in ['director', 'head_of_department', 'manager', 'head', 'leader']:
                 if hasattr(dept, attr) and getattr(dept, attr):
                     director_obj = getattr(dept, attr)
                     break
             
-            # 2. Kama idara haina director, tumia `job_title` au `is_director` badala ya `role`
             if not director_obj:
                 director_obj = Employee.objects.filter(
-                    department=dept,
-                    job_title__icontains='Mkurugenzi'
+                    department=dept, job_title__icontains='Mkurugenzi'
                 ).first() or Employee.objects.filter(
-                    department=dept,
-                    job_title__icontains='Director'
+                    department=dept, job_title__icontains='Director'
                 ).first() or Employee.objects.filter(
-                    department=dept,
-                    is_director=True
+                    department=dept, is_director=True
                 ).first()
 
         director_phone, director_email = extract_phone_and_email(director_obj)
 
-        # HAKIKISHA: Director yupo NA Mfanyakazi anayechelewa SIO huyo Director mwenyewe!
         if director_obj and director_obj.pk != employee.pk:
-            dir_msg = f"Taarifa ya Mahudhurio: Mfanyakazi {full_name} wa idara yako amechelewa kufika kazini leo na aliingia saa {time_str}. Hii ni mara yake ya {late_count} kuchelewa katika mwezi huu. Tafadhali pokea taarifa hii kwa ufuatiliaji. - NETC Attendance System"
-            
+            dir_msg = f"Taarifa ya Mahudhurio: Mfanyakazi {full_name} wa idara yako amechelewa kufika kazini leo na aliingia saa {time_str}. Hii ni mara yake ya {late_count} kuchelewa mwezi huu."
             if director_phone:
                 send_sms_notification(director_phone, dir_msg)
-
             if director_email:
-                dir_email_subject = f"TAARIFA YA IDARA: Kuchelewa kwa {full_name}"
-                dir_email_body = (
-    f"Habari Mkuu wa Idara,\n\n"
+                send_email_notification(f"TAARIFA YA IDARA: Kuchelewa kwa {full_name}", dir_msg, [director_email])
 
-    f"Taarifa za mahudhurio zinaonyesha kuwa mfanyakazi {full_name} wa idara yako "
-    f"amechelewa kufika kazini leo, tarehe {today.strftime('%d-%m-%Y')}, "
-    f"na aliingia saa {time_str}.\n\n"
-
-    f"Hii ni mara yake ya {late_count} kuchelewa katika mwezi wa "
-    f"{today.strftime('%B %Y')}.\n\n"
-
-    f"Taarifa hii imetumwa kwa ajili ya taarifa na ufuatiliaji wa mahudhurio "
-    f"katika idara yako.\n\n"
-
-    f"---\n"
-    f"NETC Attendance System\n"
-)
-                send_email_notification(dir_email_subject, dir_email_body, [director_email])
-        elif not director_obj:
-            print(f"[Alert System]: Mfanyakazi {full_name} idara yake haina Director au namba/email yake haijajazwa vizuri kwenye mfumo!")
-
-        # C. MARA YA 2 AU ZAIDI: Taarifa kwa Officers wote (SMS na Email)
-        if late_count >= 2:
-            officers = Officer.objects.all()
-            officer_emails = []
-            officer_msg = f"ALERT: Mfanyakazi {full_name} amechelewa mara {late_count} mwezi huu wa {today.strftime('%B %Y')} (Leo: {time_str})."
-
-            for officer in officers:
-                off_phone, off_email = extract_phone_and_email(officer)
-                if off_phone:
-                    send_sms_notification(off_phone, officer_msg)
-                if off_email:
-                    officer_emails.append(off_email)
-
-            send_email_notification(
-                subject=f"Taarifa ya Kuchelewa Mara kwa Mara: {full_name}",
-                message=officer_msg,
-                recipient_list=officer_emails
-            )
-
-        # D. MARA YA 3 AU ZAIDI: Barua ya Onyo (Email kwa Mfanyakazi)
         if late_count >= 3:
             warning_email_body = (
-    f"Ndugu {full_name},\n\n"
-
-    f"TAARIFA YA ONYO KUHUSU KUCHELEWA KAZINI\n\n"
-
-    f"Rekodi za mfumo wa mahudhurio zinaonyesha kuwa umechelewa kufika kazini "
-    f"mara {late_count} katika mwezi wa {today.strftime('%B %Y')}.\n\n"
-
-    f"Tunapenda kukukumbusha umuhimu wa kutunza muda na kufika kazini kwa wakati, "
-    f"ili kuhakikisha utekelezaji wa majukumu unaendelea vizuri.\n\n"
-
-    f"Tafadhali zingatia zaidi muda wa kufika kazini na jitahidi kuhakikisha "
-    f"hali ya kuchelewa haijirudii mara kwa mara.\n\n"
-
-    f"Tunaamini utazingatia taarifa hii na kufanya maboresho katika utunzaji wa muda.\n\n"
-
-    f"Bwana akubariki katika utekelezaji wa majukumu yako.\n"
-    f"Maranatha!\n\n"
-
-    f"NETC HQ\n"
-    f"Ujumbe huu umetumwa kupitia Mfumo wa Mahudhurio."
-)
-            send_email_notification(
-                subject="BARUA YA ONYO - KUCHELEWA KAZINI",
-                message=warning_email_body,
-                recipient_list=[emp_email]
+                f"Ndugu {full_name},\n\nTAARIFA YA ONYO KUHUSU KUCHELEWA KAZINI\n\n"
+                f"Rekodi zinaonyesha umechelewa mara {late_count} mwezi huu wa {today.strftime('%B %Y')}. "
+                f"Tafadhali zingatia muda wa kufika kazini.\n\nMaranatha!\nNETC HQ"
             )
+            send_email_notification("BARUA YA ONYO - KUCHELEWA KAZINI", warning_email_body, [emp_email])
 
     # 2. MFANYAKAZI AMEWAHI (PRESENT)
     elif attendance_record.status == 'PRESENT':
         past_4_logs = Attendance.objects.filter(
-            employee=employee,
-            attendance_date__lt=today
+            employee=employee, attendance_date__lt=today
         ).order_by('-attendance_date')[:3]
 
-        presents_streak = 1  # Ya leo
+        presents_streak = 1 
         for log in past_4_logs:
             if log.status == 'PRESENT':
                 presents_streak += 1
@@ -290,45 +198,136 @@ def process_attendance_rules(employee, now_datetime, attendance_record):
 
 
 # =====================================================================
+# HELPER TO DETECT USER TYPE & REDIRECT CORRECTLY (IMERAKEBISHWA)
+# =====================================================================
+def get_user_dashboard_redirect(user, employee=None):
+    """
+    Husaidia kutambua kama mtumiaji ni Director/Admin au Mfanyakazi wa kawaida 
+    ili kumrudisha kwenye Dashboard yake sahihi bila kuleta 404.
+    """
+    if not user.is_authenticated:
+        return redirect('login')
+    
+    is_director = False
+    
+    # Angalia kupitia Groups au kama ni Staff/Superuser
+    if user.groups.filter(name__icontains='Director').exists() or user.groups.filter(name__icontains='Administrator').exists() or user.groups.filter(name__icontains='Administrators').exists():
+        is_director = True
+    elif user.is_superuser or user.is_staff:
+        is_director = True
+    elif hasattr(user, 'is_director') and user.is_director:
+        is_director = True
+    
+    # Angalia kupitia Employee kama ni Head of Department au Director
+    if not is_director and employee:
+        if getattr(employee, 'is_director', False):
+            is_director = True
+        elif employee.job_title and ('director' in employee.job_title.lower() or 'mkurugenzi' in employee.job_title.lower()):
+            is_director = True
+        else:
+            dept_check = apps.get_model('employees', 'Department')
+            if dept_check:
+                try:
+                    if dept_check.objects.filter(head_of_department=employee).exists():
+                        is_director = True
+                except Exception:
+                    pass
+
+    if is_director:
+        try:
+            return redirect('director_dashboard')
+        except Exception:
+            try:
+                return redirect('employees:director_dashboard')
+            except Exception:
+                return redirect('/employees/dashboard/director/')
+    else:
+        # Hapa tunatumعا URL zinazoeleweka kwenye mfumo wako kwaajili ya employee/dashboard
+        try:
+            return redirect('employee_dashboard')
+        except Exception:
+            try:
+                return redirect('dashboard:employee_dashboard')
+            except Exception:
+                return redirect('/dashboard/')
+
+
+# =====================================================================
 # MAIN VIEWS
 # =====================================================================
 
 def employee_checkin_view(request):
-    """View inayohudumia ukurasa wa HTML wa Check-In / Check-Out."""
+    """View inayohudumia ukurasa wa HTML wa Check-In / Check-Out kwenye Dashboard."""
+    now_datetime = timezone.localtime(timezone.now())
+    today = now_datetime.date()
+    current_month = today.month
+    current_year = today.year
+
+    employee = None
+    officer = None
+
+    if hasattr(request.user, 'employee') and request.user.employee:
+        employee = request.user.employee
+    elif hasattr(request.user, 'officer') and request.user.officer:
+        officer = request.user.officer
+    else:
+        employee = Employee.objects.filter(user=request.user).first()
+        if not employee:
+            officer = Officer.objects.filter(user=request.user).first()
+
+    balance = None
+    if employee:
+        for app_label in ['leave', 'leaves']:
+            try:
+                LeaveBalanceModel = apps.get_model(app_label, 'LeaveBalance')
+                if LeaveBalanceModel:
+                    balance = LeaveBalanceModel.objects.filter(employee=employee).first()
+                    if balance:
+                        break
+            except Exception:
+                continue
+
     if request.method == 'POST':
         user_code = request.POST.get('employee_code', '').strip()
         action = request.POST.get('action')
 
+        if not user_code and (employee or officer):
+            user_code = employee.employee_code if employee else officer.officer_code
+
         if not user_code:
             messages.error(request, "Tafadhali ingiza Code yako!")
-            return redirect('employee_checkin')
+            return get_user_dashboard_redirect(request.user, employee)
 
-        employee = Employee.objects.filter(employee_code__iexact=user_code).first() or \
-                   Employee.objects.filter(fingerprint_id=user_code).first()
+        target_employee = Employee.objects.filter(employee_code__iexact=user_code).first() or \
+                          Employee.objects.filter(fingerprint_id=user_code).first()
 
-        officer = None
-        if not employee:
-            officer = Officer.objects.filter(officer_code__iexact=user_code).first() or \
-                      Officer.objects.filter(fingerprint_id=user_code).first()
+        target_officer = None
+        if not target_employee:
+            target_officer = Officer.objects.filter(officer_code__iexact=user_code).first() or \
+                             Officer.objects.filter(fingerprint_id=user_code).first()
 
-        if not employee and not officer:
+        if not target_employee and not target_officer:
             messages.error(request, f"Mtumiaji mwenye code ({user_code}) hajapatikana!")
-            return redirect('employee_checkin')
+            return get_user_dashboard_redirect(request.user, employee)
 
-        full_name = f"{employee.first_name} {employee.last_name}" if employee else f"{officer.first_name} {officer.last_name}"
+        active_emp = target_employee
+        active_off = target_officer
+        full_name = f"{active_emp.first_name} {active_emp.last_name}" if active_emp else f"{active_off.first_name} {active_off.last_name}"
 
-        now_datetime = timezone.localtime(timezone.now())
-        today = now_datetime.date()
         now_time = now_datetime.time()
-        weekday = today.weekday()  # 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+        weekday = today.weekday() 
 
-        is_friday = (weekday == 4)  # Work from Home
+        if weekday == 5:
+            messages.error(request, f"Habari {full_name}, leo ni siku ya Sabato (Jumamosi). Mfumo wa mahudhurio umefungwa!")
+            return get_user_dashboard_redirect(request.user, employee)
+
+        is_optional_day = (weekday == 4 or weekday == 6)
 
         filter_kwargs = {'attendance_date': today}
-        if employee:
-            filter_kwargs['employee'] = employee
+        if active_emp:
+            filter_kwargs['employee'] = active_emp
         else:
-            filter_kwargs['officer'] = officer
+            filter_kwargs['officer'] = active_off
 
         attendance = Attendance.objects.filter(**filter_kwargs).first()
 
@@ -337,14 +336,9 @@ def employee_checkin_view(request):
                 time_str = attendance.check_in_time.strftime('%I:%M %p') if attendance.check_in_time else ""
                 messages.error(request, f"Habari {full_name}, tayari umefanya Check-In leo saa {time_str}!")
             else:
-                cutoff_time = time(8, 5, 0)  # Grace Period: 08:05 AM
-                
-                if is_friday:
-                    status = 'PRESENT'
-                    note = "(Work From Home)"
-                else:
-                    status = 'PRESENT' if now_time <= cutoff_time else 'LATE'
-                    note = "Umewahi!" if status == 'PRESENT' else "Umechelewa!"
+                cutoff_time = time(8, 5, 0)
+                status = 'PRESENT' if (is_optional_day or now_time <= cutoff_time) else 'LATE'
+                note = "Umewahi!" if status == 'PRESENT' else "Umechelewa!"
 
                 attendance = Attendance.objects.create(
                     **filter_kwargs,
@@ -352,13 +346,10 @@ def employee_checkin_view(request):
                     status=status
                 )
 
-                if employee:
-                    process_attendance_rules(employee, now_datetime, attendance)
+                if active_emp:
+                    process_attendance_rules(active_emp, now_datetime, attendance)
 
-                messages.success(
-                    request,
-                    f"Karibu {full_name}! Check-In yako imefanikiwa saa {now_datetime.strftime('%I:%M %p')}. {note}"
-                )
+                messages.success(request, f"Karibu {full_name}! Check-In yako imefanikiwa saa {now_datetime.strftime('%I:%M %p')}. {note}")
 
         elif action == 'check_out':
             if not attendance:
@@ -367,15 +358,11 @@ def employee_checkin_view(request):
                 time_str = attendance.check_out_time.strftime('%I:%M %p')
                 messages.error(request, f"Habari {full_name}, tayari umeshafanya Check-Out leo saa {time_str}!")
             else:
-                closing_time = time(17, 30, 0)  # Saa 17:30 (05:30 PM)
-                
-                early_out_warning = ""
-                if now_time < closing_time and not is_friday:
-                    early_out_warning = " (Umetoka kabla ya muda rasmi wa 05:30 PM!)"
+                closing_time = time(17, 30, 0)
+                early_out_warning = " (Umetoka kabla ya muda rasmi wa 05:30 PM!)" if (now_time < closing_time and not is_optional_day) else ""
 
                 attendance.check_out_time = now_time
 
-                # Kuhesabu Masaa Aliyofanya Kazi
                 dt_in = datetime.datetime.combine(today, attendance.check_in_time)
                 dt_out = datetime.datetime.combine(today, now_time)
                 duration = dt_out - dt_in
@@ -395,9 +382,42 @@ def employee_checkin_view(request):
                     f"Umeshafanya kazi kwa masaa {hours} na dakika {minutes} leo."
                 )
 
-        return redirect('employee_checkin')
+        return get_user_dashboard_redirect(request.user, employee)
 
-    return render(request, 'attendance/check_in.html')
+    context = {
+        'employee': employee,
+        'officer': officer,
+        'on_time_count': 0,
+        'late_count': 0,
+        'today_attendance': None,
+        'balance': balance,
+    }
+
+    target_filter = {}
+    if employee:
+        target_filter['employee'] = employee
+    elif officer:
+        target_filter['officer'] = officer
+
+    if target_filter:
+        today_attendance = Attendance.objects.filter(**target_filter, attendance_date=today).first()
+        context['today_attendance'] = today_attendance
+
+        context['on_time_count'] = Attendance.objects.filter(
+            **target_filter,
+            attendance_date__month=current_month,
+            attendance_date__year=current_year,
+            status='PRESENT'
+        ).count()
+
+        context['late_count'] = Attendance.objects.filter(
+            **target_filter,
+            attendance_date__month=current_month,
+            attendance_date__year=current_year,
+            status='LATE'
+        ).count()
+
+    return render(request, 'dashboards/employee_dashboard.html', context)
 
 
 @csrf_exempt
@@ -433,7 +453,11 @@ def fingerprint_scan_api(request):
         today = now_datetime.date()
         now_time = now_datetime.time()
         weekday = today.weekday()
-        is_friday = (weekday == 4)
+
+        if weekday == 5:
+            return JsonResponse({'status': 'error', 'message': 'Leo ni Sabato, mfumo wa mahudhurio umefungwa.'}, status=400)
+
+        is_optional_day = (weekday == 4 or weekday == 6)
 
         filter_kwargs = {'attendance_date': today}
         if employee:
@@ -442,7 +466,7 @@ def fingerprint_scan_api(request):
             filter_kwargs['officer'] = officer
 
         cutoff_time = time(8, 5, 0)
-        status = 'PRESENT' if (is_friday or now_time <= cutoff_time) else 'LATE'
+        status = 'PRESENT' if (is_optional_day or now_time <= cutoff_time) else 'LATE'
 
         attendance, created = Attendance.objects.get_or_create(
             **filter_kwargs,

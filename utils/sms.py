@@ -6,9 +6,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 # ==============================================================================
-# TAARIFA ZA SDASMS API (Zilizotolewa kutoka attendance/views.py)
+# TAARIFA ZA SDASMS API (Zimesasishwa na Token Mpya)
 # ==============================================================================
-SDASMS_API_TOKEN = "165|f2IywyWAhT8qG7TxcGXZKn9cO1jsNq7X4Kg1gcu66db2f0fc"
+SDASMS_API_TOKEN = "167|2eiLhXwLf3x4SEb1pACaQiCMiKpUXh2RcEuR4tQhf9be8aad"
 SDASMS_URL = "https://my.sdasms.com/api/v3/sms/send"
 SDASMS_SENDER_ID = "NETC HQ"
 
@@ -16,7 +16,7 @@ SDASMS_SENDER_ID = "NETC HQ"
 def format_phone_number(phone_number):
     """
     Inasafisha na kubadilisha namba ya simu kuwa kwenye format ya Kitanzania (255XXXXXXXXX).
-    Mfano: '0712345678' -> '255712345678'
+    Inazuia namba zenye upungufu au urefu usio sahihi.
     """
     if not phone_number:
         return None
@@ -24,15 +24,19 @@ def format_phone_number(phone_number):
     # Ondoa nafasi na alama zisizohitajika
     cleaned_number = str(phone_number).strip().replace("+", "").replace(" ", "").replace("-", "")
 
-    # Kama inaanza na '0', ibadilishe kuwa '255'
-    if cleaned_number.startswith("0"):
+    # Kama inaanza na '0' na ina urefu wa tarakimu 10
+    if cleaned_number.startswith("0") and len(cleaned_number) == 10:
         cleaned_number = "255" + cleaned_number[1:]
     
     # Kama inaanza na '7' au '6' na ina urefu wa tarakimu 9
     elif (cleaned_number.startswith("7") or cleaned_number.startswith("6")) and len(cleaned_number) == 9:
         cleaned_number = "255" + cleaned_number
 
-    return cleaned_number
+    # Hakikisha inaishia kwenye muundo sahihi wa tarakimu 12 (255 + namba ya simu)
+    if cleaned_number.startswith("255") and len(cleaned_number) == 12:
+        return cleaned_number
+
+    return None
 
 
 def send_sms_notification(phone_number, message):
@@ -49,8 +53,8 @@ def send_sms_notification(phone_number, message):
     formatted_phone = format_phone_number(phone_number)
 
     if not formatted_phone:
-        print("[SDASMS Alert]: Namba ya simu haijatolewa au siyo sahihi!")
-        logger.error("[SDASMS Error]: Namba ya simu haipo au haina muundo sahihi.")
+        print(f"[SDASMS Alert]: Namba ya simu '{phone_number}' siyo sahihi au ina upungufu wa tarakimu!")
+        logger.error(f"[SDASMS Error]: Namba batili imekataliwa: {phone_number}")
         return False
 
     if not message:
@@ -75,12 +79,17 @@ def send_sms_notification(phone_number, message):
             SDASMS_URL,
             json=payload,
             headers=headers,
-            timeout=10,
+            timeout=15,
             verify=False
         )
         
-        res_data = response.json()
-        print(f"[SDASMS Response to {formatted_phone}]: {res_data}")
+        # Jaribu kusoma majibu kama JSON, ikishindikana chukua text ya kawaida
+        try:
+            res_data = response.json()
+        except json.JSONDecodeError:
+            res_data = response.text
+
+        print(f"[SDASMS Response to {formatted_phone}]: Status {response.status_code} - {res_data}")
 
         # Kuangalia kama API imerudisha majibu ya mafanikio
         if response.status_code in [200, 201]:

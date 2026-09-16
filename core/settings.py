@@ -12,7 +12,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
-# Hapa tumeweka SECRET_KEY iwe salama (unaweza kuweka key yako halisi)
 SECRET_KEY = 'django-insecure-py_d$3e_g+i5j-i7(#dj2upjkd-2yma1#n-3)pj41crm@df6jh'
 
 # Imewekwa False kwa ajili ya usalama wa kwenye Production (cPanel)
@@ -132,9 +131,6 @@ LOGIN_REDIRECT_URL = '/admin-overview/'
 LOGOUT_REDIRECT_URL = '/auth/login/'
 
 
-# Email
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Unaweza kuongeza configuration za SMTP hapa kama unatumia email halisi badala ya console

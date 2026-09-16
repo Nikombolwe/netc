@@ -1,12 +1,14 @@
 import csv
+import logging
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+import pytz
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -15,6 +17,9 @@ from .forms import UserRegistrationForm, EmployeeProfileForm, OfficerProfileForm
 
 # Helper Functions za SMS & Data Extraction
 from utils.sms import send_sms_notification
+
+# Logger setup kwa ajili ya kufuatilia makosa (Debugging)
+logger = logging.getLogger(__name__)
 
 # Import za App Zingine kwa Usalama
 try:
@@ -35,7 +40,20 @@ except ImportError:
 
 
 # --------------------------------------------------------
-# HELPER FUNCTION FOR IP ADDRESS DETECTION (OFFICE NETWORK)
+# UTILITY / DECORATORS YA USALAMA (ACCESS CONTROL)
+# --------------------------------------------------------
+def is_officer(user):
+    return user.is_authenticated and (user.is_superuser or hasattr(user, 'officer_profile'))
+
+def is_director(user):
+    return user.is_authenticated and (
+        user.is_superuser or 
+        (hasattr(user, 'employee_profile') and user.employee_profile and user.employee_profile.is_director)
+    )
+
+
+# --------------------------------------------------------
+# HELPER FUNCTIONS
 # --------------------------------------------------------
 def get_client_ip(request):
     """Inapata Real IP Address ya mteja aliyeunganishwa kwenye mfumo"""
@@ -47,9 +65,12 @@ def get_client_ip(request):
     return ip
 
 
-# --------------------------------------------------------
-# HELPER FUNCTION FOR PHONE & EMAIL EXTRACTION
-# --------------------------------------------------------
+def get_tz_now():
+    """Inarudisha muda wa sasa wa Tanzania (East Africa Time)"""
+    tz = pytz.timezone('Africa/Dar_es_Salaam')
+    return timezone.now().astimezone(tz)
+
+
 def extract_contact_info(obj):
     """Inasaidia kupata phone number na email kutoka kwa Employee/Officer/User"""
     if not obj:
@@ -68,7 +89,7 @@ def extract_contact_info(obj):
 
 
 def get_employee_full_name(employee):
-    """Inarudisha jina kamili la mfanyakazi kwa usalama bila kujali kama linaitwa full_name au first/last name"""
+    """Inarudisha jina kamili la mfanyakazi kwa usalama bila kujali muundo wake"""
     if not employee:
         return "N/A"
     if hasattr(employee, 'full_name') and not callable(employee.full_name):
@@ -85,16 +106,24 @@ def get_employee_full_name(employee):
 # --------------------------------------------------------
 # 1. USAJILI WA MTUMIAJI MPYA (ADD USER)
 # --------------------------------------------------------
+#@login_required
+#@user_passes_test(is_officer)
 def add_user_view(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
-        emp_form = EmployeeProfileForm(request.POST)
-        officer_form = OfficerProfileForm(request.POST)
-
         user_type = request.POST.get('user_type')
         fp_credential = request.POST.get('fingerprint_credential_id', '')
 
-        if user_form.is_valid():
+        emp_form = EmployeeProfileForm(request.POST) if user_type in ['employee', 'director'] else None
+        officer_form = OfficerProfileForm(request.POST) if user_type == 'officer' else None
+
+        forms_valid = user_form.is_valid()
+        if emp_form:
+            forms_valid = forms_valid and emp_form.is_valid()
+        if officer_form:
+            forms_valid = forms_valid and officer_form.is_valid()
+
+        if forms_valid:
             try:
                 with transaction.atomic():
                     raw_password = user_form.cleaned_data['password']
@@ -109,38 +138,42 @@ def add_user_view(request):
                     emp_code = ""
 
                     if user_type == 'officer':
-                        if officer_form.is_valid():
-                            officer = officer_form.save(commit=False)
-                            officer.user = user
-                            if hasattr(officer, 'fingerprint_id'):
-                                officer.fingerprint_id = fp_credential
-                            officer.save()
-                            
-                            phone_number, _ = extract_contact_info(officer)
-                            full_name = get_employee_full_name(officer)
-                            emp_code = getattr(officer, 'officer_code', getattr(officer, 'employee_code', 'N/A'))
-                            
-                            messages.success(request, f"Officer {full_name} amesajiliwa kikamilifu!")
-                        else:
-                            raise ValueError(f"Kuna makosa kwenye fomu ya Officer: {', '.join([f'{k}: {v}' for k, errs in officer_form.errors.items() for v in errs])}")
+                        officer = officer_form.save(commit=False)
+                        officer.user = user
+                        if hasattr(officer, 'fingerprint_id'):
+                            officer.fingerprint_id = fp_credential
+                        officer.save()
+                        
+                        phone_number, _ = extract_contact_info(officer)
+                        full_name = get_employee_full_name(officer)
+                        emp_code = getattr(officer, 'officer_code', getattr(officer, 'employee_code', 'N/A'))
+                        messages.success(request, f"Officer {full_name} amesajiliwa kikamilifu!")
 
                     elif user_type in ['employee', 'director']:
-                        if emp_form.is_valid():
-                            employee = emp_form.save(commit=False)
-                            employee.user = user
-                            if user_type == 'director':
-                                employee.is_director = True
-                            if hasattr(employee, 'fingerprint_id'):
-                                employee.fingerprint_id = fp_credential
-                            employee.save()
-                            
-                            phone_number, _ = extract_contact_info(employee)
-                            full_name = get_employee_full_name(employee)
-                            emp_code = getattr(employee, 'employee_code', 'N/A')
+                        employee = emp_form.save(commit=False)
+                        employee.user = user
+                        if user_type == 'director':
+                            employee.is_director = True
+                        if hasattr(employee, 'fingerprint_id'):
+                            employee.fingerprint_id = fp_credential
+                        employee.save()
+                        
+                        phone_number, _ = extract_contact_info(employee)
+                        full_name = get_employee_full_name(employee)
+                        emp_code = getattr(employee, 'employee_code', 'N/A')
 
-                            messages.success(request, f"{'Director' if user_type == 'director' else 'Employee'} {full_name} amesajiliwa kikamilifu!")
-                        else:
-                            raise ValueError(f"Kuna makosa kwenye fomu ya Mfanyakazi: {', '.join([f'{k}: {v}' for k, errs in emp_form.errors.items() for v in errs])}")
+                        # Tengeneza LeaveBalance ya kuanzia (28 Annual, 12 Emergency) moja kwa moja
+                        if LeaveBalance is not None:
+                            LeaveBalance.objects.get_or_create(
+                                user=user,
+                                defaults={
+                                    'annual_leave_days': 28,
+                                    'emergency_leave_count': 12
+                                }
+                            )
+
+                        role_label = 'Director' if user_type == 'director' else 'Employee'
+                        messages.success(request, f"{role_label} {full_name} amesajiliwa kikamilifu!")
 
                     if phone_number:
                         sms_message = (
@@ -148,17 +181,22 @@ def add_user_view(request):
                             f"Username: {username}\n"
                             f"Password: {raw_password}\n"
                             f"Employee Code: {emp_code}\n"
-                            f"Itumie hii ku-check in/out."
+                            f"Itumie hii kwenye mfumo wa mahudhurio."
                         )
                         send_sms_notification(phone_number, sms_message)
 
-                    return redirect('add_user')
+                    return redirect('employees:add_user')
 
             except Exception as e:
-                messages.error(request, str(e))
+                logger.error(f"[Add User Error]: {str(e)}", exc_info=True)
+                messages.error(request, "Kumetokea kosa la kiufundi wakati wa kusajili. Tafadhali jaribu tena.")
         else:
-            clean_errors = ", ".join([f"{field}: {', '.join(errors)}" for field, errors in user_form.errors.items()])
-            messages.error(request, f"Kuna makosa kwenye taarifa za Akaunti: {clean_errors}")
+            all_errors = {**user_form.errors}
+            if emp_form: all_errors.update(emp_form.errors)
+            if officer_form: all_errors.update(officer_form.errors)
+            
+            clean_errors = ", ".join([f"{field}: {', '.join(errors)}" for field, errors in all_errors.items()])
+            messages.error(request, f"Kuna makosa kwenye fomu: {clean_errors}")
 
     else:
         user_form = UserRegistrationForm()
@@ -176,64 +214,15 @@ def add_user_view(request):
 
 
 # --------------------------------------------------------
-# 2. EMPLOYEE DASHBOARD (CHECK-IN/OUT + MAOMBI + SMS)
+# 2. EMPLOYEE DASHBOARD (Imeboreshwa kuonyesha data vizuri)
 # --------------------------------------------------------
 @login_required
 def employee_dashboard(request):
-    """Dashboard ya Mfanyakazi: Check-In/Out ya Ndani ya Mtandao wa Ofisi & Kutuma Maombi"""
     user = request.user
-    today = timezone.now().date()
+    tz_now = get_tz_now()
+    today = tz_now.date()
     employee = getattr(user, 'employee_profile', None)
     
-    # KUSHUGHULIKIA KITENDO CHA CHECK-IN / CHECK-OUT KUTOKA DASHBOARD
-    if request.method == 'POST' and 'action_attendance' in request.POST:
-        action = request.POST.get('action_attendance')
-        client_ip = get_client_ip(request)
-        
-        # WEKA HAPA IP ADDRESS AU SUB-NET ZA OFISI YAKO
-        ALLOWED_IPS = ['192.168.1.', '10.0.0.', '127.0.0.1']
-        
-        ip_allowed = any(client_ip.startswith(net) for net in ALLOWED_IPS)
-        
-        if not ip_allowed:
-            messages.error(request, f"Huruhusiwi kufanya Check-in/out ukiwa nje ya mtandao wa ofisi! (IP yako: {client_ip})")
-            return redirect('employee_dashboard')
-
-        if Attendance is not None and employee:
-            current_time = timezone.now().time()
-            today_attendance = Attendance.objects.filter(employee=employee, attendance_date=today).first()
-
-            if action == 'check_in':
-                if today_attendance and today_attendance.check_in_time:
-                    messages.warning(request, "Tayari umeshafanya Check-In leo!")
-                else:
-                    if not today_attendance:
-                        Attendance.objects.create(
-                            employee=employee,
-                            attendance_date=today,
-                            check_in_time=current_time,
-                            status='PRESENT'
-                        )
-                    else:
-                        today_attendance.check_in_time = current_time
-                        today_attendance.save()
-                    messages.success(request, "Umeanza kazi rasmi (Check-In) mafanikio makubwa!")
-
-            elif action == 'check_out':
-                if not today_attendance or not today_attendance.check_in_time:
-                    messages.error(request, "Hujafanya Check-In bado kwa hiyo huwezi kufanya Check-Out!")
-                elif today_attendance.check_out_time:
-                    messages.warning(request, "Tayari umeshafanya Check-Out leo!")
-                else:
-                    today_attendance.check_out_time = current_time
-                    today_attendance.save()
-                    messages.success(request, "Umemaliza kazi salama (Check-Out)!")
-        else:
-            messages.error(request, "Wasifu wa mfanyakazi haujapatikana kwenye mfumo.")
-                    
-        return redirect('employee_dashboard')
-
-    # KUSHUGHULIKIA MAOMBI YA RUHUSA (LEAVE/LATE/ABSENCE REQUESTS)
     if request.method == 'POST' and RequestApplication is not None and 'request_type' in request.POST:
         req_type = request.POST.get('request_type')
         start_date = request.POST.get('start_date')
@@ -241,14 +230,44 @@ def employee_dashboard(request):
         reason = request.POST.get('reason')
 
         if start_date and reason:
-            RequestApplication.objects.create(
-                user=user,
-                request_type=req_type,
-                start_date=start_date,
-                end_date=end_date,
-                reason=reason,
-                status='PENDING'
-            )
+            # Hakiki sheria za dharura (Emergency Leave): isizidi mara 1 kwa mwezi na isizidi 12 kwa mwaka
+            if req_type == 'EMERGENCY_LEAVE' or req_type == 'EMERGENCY':
+                current_month = tz_now.month
+                current_year = tz_now.year
+                
+                # Angalia kama amewahi kuomba dharura mwezi huu
+                existing_emergency_this_month = RequestApplication.objects.filter(
+                    Q(employee=employee) if employee else Q(user=user),
+                    Q(request_type='EMERGENCY_LEAVE') | Q(request_type='EMERGENCY'),
+                    start_date__month=current_month,
+                    start_date__year=current_year
+                ).exists()
+
+                if existing_emergency_this_month:
+                    messages.error(request, "Umeshawahi kuomba ruhusa ya dharura kwa mwezi huu. Huruhusiwi kuomba zaidi ya mara moja kwa mwezi!")
+                    return redirect('employees:employee_dashboard')
+
+                # Angalia salio la dharura kama lipo
+                if LeaveBalance is not None:
+                    bal_obj = LeaveBalance.objects.filter(user=user).first()
+                    if bal_obj and getattr(bal_obj, 'emergency_leave_count', 0) <= 0:
+                        messages.error(request, "Salio lako la siku za dharura limekwisha!")
+                        return redirect('employees:employee_dashboard')
+
+            # Tunahakikisha inatumia user au employee kulingana na muundo wa model
+            req_data = {
+                'request_type': req_type,
+                'start_date': start_date,
+                'end_date': end_date,
+                'reason': reason,
+                'status': 'PENDING'
+            }
+            if 'user' in [f.name for f in RequestApplication._meta.get_fields()]:
+                req_data['user'] = user
+            elif 'employee' in [f.name for f in RequestApplication._meta.get_fields()] and employee:
+                req_data['employee'] = employee
+
+            RequestApplication.objects.create(**req_data)
 
             emp_phone, _ = extract_contact_info(employee or user)
             full_name = get_employee_full_name(employee) if employee else (f"{user.first_name} {user.last_name}".strip() or user.username)
@@ -257,7 +276,7 @@ def employee_dashboard(request):
                 msg_emp = f"Habari {full_name}, ombi lako la ruhusa la tarehe {start_date} limepokelewa kikamilifu na linashughulikiwa."
                 send_sms_notification(emp_phone, msg_emp)
 
-            if employee and hasattr(employee, 'department') and employee.department:
+            if employee and getattr(employee, 'department', None):
                 director = Employee.objects.filter(
                     department=employee.department, 
                     is_director=True
@@ -270,14 +289,19 @@ def employee_dashboard(request):
                         send_sms_notification(dir_phone, msg_dir)
 
             messages.success(request, "Ombi limetumwa na taarifa za SMS zimetumwa kikamilifu!")
-            return redirect('employee_dashboard')
+            return redirect('employees:employee_dashboard')
         else:
             messages.error(request, "Tafadhali jaza tarehe na sababu ya ombi kikamilifu.")
 
-    balance = LeaveBalance.objects.filter(user=user).first() if LeaveBalance else None
-    on_time_count = 0
-    late_count = 0
-    today_attendance_record = None
+    # Kuboresha urudishwaji wa LeaveBalance dynamically kwa kutumia get_or_create
+    balance = None
+    if LeaveBalance is not None and user:
+        balance, _ = LeaveBalance.objects.get_or_create(
+            user=user,
+            defaults={'annual_leave_days': 28, 'emergency_leave_count': 12}
+        )
+
+    on_time_count, late_count, today_attendance_record = 0, 0, None
 
     if Attendance is not None and employee:
         month_attendances = Attendance.objects.filter(
@@ -289,7 +313,14 @@ def employee_dashboard(request):
         on_time_count = month_attendances.filter(status='PRESENT', is_late=False).count()
         today_attendance_record = month_attendances.filter(attendance_date=today).first()
 
-    user_requests = RequestApplication.objects.filter(user=user) if RequestApplication is not None else []
+    # Kupata maombi ya mtumiaji kwa kuzingatia uwanja uliopo kwenye RequestApplication
+    user_requests = []
+    if RequestApplication is not None:
+        field_names = [f.name for f in RequestApplication._meta.get_fields()]
+        if 'user' in field_names:
+            user_requests = RequestApplication.objects.filter(user=user)
+        elif 'employee' in field_names and employee:
+            user_requests = RequestApplication.objects.filter(employee=employee)
     
     context = {
         'employee': employee,
@@ -297,9 +328,9 @@ def employee_dashboard(request):
         'on_time_count': on_time_count,
         'late_count': late_count,
         'today_attendance': today_attendance_record,
-        'req_late_count': user_requests.filter(request_type='LATE_ARRIVAL').count() if user_requests else 0,
-        'req_absence_count': user_requests.filter(request_type='ABSENCE').count() if user_requests else 0,
-        'req_leave_count': user_requests.filter(request_type='ANNUAL_LEAVE').count() if user_requests else 0,
+        'req_late_count': user_requests.filter(Q(request_type='LATE_ARRIVAL') | Q(request_type='LATE')).count() if user_requests else 0,
+        'req_absence_count': user_requests.filter(Q(request_type='ABSENCE') | Q(request_type='ABSENT')).count() if user_requests else 0,
+        'req_leave_count': user_requests.filter(Q(request_type='ANNUAL_LEAVE') | Q(request_type='LEAVE')).count() if user_requests else 0,
         'recent_requests': user_requests.order_by('-id')[:5] if user_requests else [],
     }
     return render(request, 'dashboards/employee_dashboard.html', context)
@@ -309,20 +340,18 @@ def employee_dashboard(request):
 # 3. DIRECTOR DASHBOARD & APPROVAL ACTIONS
 # --------------------------------------------------------
 @login_required
+@user_passes_test(is_director)
 def director_dashboard(request):
-    """Dashboard ya Mkurugenzi"""
     user = request.user
-    today = timezone.now().date()
+    tz_now = get_tz_now()
+    today = tz_now.date()
     director = getattr(user, 'employee_profile', None)
 
     director_name = get_employee_full_name(director) if director else (f"{user.first_name} {user.last_name}".strip() or user.username)
     
     target_department = None
     if director:
-        if director.department:
-            target_department = director.department
-        else:
-            target_department = director.managed_departments.first()
+        target_department = director.department or director.managed_departments.first()
 
     dept_name = target_department.name if target_department else "Hajawekwa Idara"
 
@@ -333,36 +362,45 @@ def director_dashboard(request):
         reason = request.POST.get('reason')
 
         if start_date and reason:
-            RequestApplication.objects.create(
-                user=user,
-                request_type=req_type,
-                start_date=start_date,
-                end_date=end_date,
-                reason=reason,
-                status='PEND_OFF'
-            )
+            req_data = {
+                'request_type': req_type,
+                'start_date': start_date,
+                'end_date': end_date,
+                'reason': reason,
+                'status': 'PEND_OFF'
+            }
+            field_names = [f.name for f in RequestApplication._meta.get_fields()]
+            if 'user' in field_names:
+                req_data['user'] = user
+            elif 'employee' in field_names and director:
+                req_data['employee'] = director
+
+            RequestApplication.objects.create(**req_data)
 
             dir_phone, _ = extract_contact_info(director or user)
-
             if dir_phone:
                 msg_dir = f"Habari {director_name}, ombi lako la ruhusa la tarehe {start_date} limepokelewa na limewasilishwa kwa Maofisa."
                 send_sms_notification(dir_phone, msg_dir)
 
-            officers = Officer.objects.all()
-            for officer in officers:
+            for officer in Officer.objects.all():
                 off_phone, _ = extract_contact_info(officer)
                 if off_phone:
                     msg_off = f"TAARIFA: Mkurugenzi {director_name} (Idara ya {dept_name}) ameomba ruhusa kuanzia {start_date}. Tafadhali ingia kwenye mfumo kuisimamia."
                     send_sms_notification(off_phone, msg_off)
 
             messages.success(request, "Ombi lako limetumwa moja kwa moja kwa Maofisa!")
-            return redirect('director_dashboard')
+            return redirect('employees:director_dashboard')
         else:
             messages.error(request, "Tafadhali jaza tarehe na sababu ya ombi kikamilifu.")
 
-    balance = LeaveBalance.objects.filter(user=user).first() if LeaveBalance else None
-    on_time_count = 0
-    late_count = 0
+    balance = None
+    if LeaveBalance is not None and user:
+        balance, _ = LeaveBalance.objects.get_or_create(
+            user=user,
+            defaults={'annual_leave_days': 28, 'emergency_leave_count': 12}
+        )
+
+    on_time_count, late_count = 0, 0
 
     if Attendance is not None and director:
         month_attendances = Attendance.objects.filter(
@@ -373,21 +411,30 @@ def director_dashboard(request):
         late_count = month_attendances.filter(Q(is_late=True) | Q(status='LATE')).count()
         on_time_count = month_attendances.filter(status='PRESENT', is_late=False).count()
 
-    my_requests = RequestApplication.objects.filter(user=user).order_by('-id')[:5] if RequestApplication is not None else []
+    my_requests = []
+    if RequestApplication is not None:
+        field_names = [f.name for f in RequestApplication._meta.get_fields()]
+        if 'user' in field_names:
+            my_requests = RequestApplication.objects.filter(user=user).order_by('-id')[:5]
+        elif 'employee' in field_names and director:
+            my_requests = RequestApplication.objects.filter(employee=director).order_by('-id')[:5]
 
-    department_employees = []
-    pending_dept_requests = []
+    department_employees, pending_dept_requests = [], []
 
     if target_department:
-        department_employees = Employee.objects.filter(
-            department=target_department
-        ).exclude(user=user)
-
+        department_employees = Employee.objects.filter(department=target_department).exclude(user=user)
         if RequestApplication is not None:
-            pending_dept_requests = RequestApplication.objects.filter(
-                user__employee_profile__department=target_department,
-                status='PENDING'
-            ).exclude(user=user).order_by('-id')
+            field_names = [f.name for f in RequestApplication._meta.get_fields()]
+            if 'user' in field_names:
+                pending_dept_requests = RequestApplication.objects.filter(
+                    user__employee_profile__department=target_department,
+                    status='PENDING'
+                ).exclude(user=user).order_by('-id')
+            elif 'employee' in field_names:
+                pending_dept_requests = RequestApplication.objects.filter(
+                    employee__department=target_department,
+                    status='PENDING'
+                ).exclude(employee=director).order_by('-id')
 
     context = {
         'director': director,
@@ -404,17 +451,18 @@ def director_dashboard(request):
 
 
 @login_required
+@user_passes_test(is_director)
+@require_POST
 def director_process_request(request, request_id, action):
-    """Mkurugenzi Anapokubali au Kukataa Ombi la Mfanyakazi Wake"""
     if RequestApplication is None:
-        return redirect('director_dashboard')
+        return redirect('employees:director_dashboard')
 
     leave_req = get_object_or_404(RequestApplication, id=request_id)
-    emp_user = leave_req.user
-    employee = getattr(emp_user, 'employee_profile', None)
+    emp_user = getattr(leave_req, 'user', getattr(leave_req.employee, 'user', None) if hasattr(leave_req, 'employee') else None)
+    employee = getattr(emp_user, 'employee_profile', getattr(leave_req, 'employee', None))
     
     emp_phone, _ = extract_contact_info(employee or emp_user)
-    full_name = get_employee_full_name(employee) if employee else (f"{emp_user.first_name} {emp_user.last_name}".strip() or emp_user.username)
+    full_name = get_employee_full_name(employee) if employee else (f"{emp_user.first_name} {emp_user.last_name}".strip() or emp_user.username if emp_user else "Mfanyakazi")
 
     if action == 'reject':
         leave_req.status = 'DIR_REJ'
@@ -434,8 +482,7 @@ def director_process_request(request, request_id, action):
             msg_emp = f"Habari {full_name}, Mkurugenzi amethibitisha ombi lako la ruhusa ({leave_req.start_date}). Ombi limetumwa kwa Maofisa kwa idhini ya mwisho."
             send_sms_notification(emp_phone, msg_emp)
 
-        officers = Officer.objects.all()
-        for officer in officers:
+        for officer in Officer.objects.all():
             off_phone, _ = extract_contact_info(officer)
             if off_phone:
                 msg_officer = f"TAARIFA: Kuna ombi jipya la ruhusa la mfanyakazi {full_name} linalosubiri idhini ya Maofisa. Tafadhali ingia kwenye mfumo."
@@ -443,21 +490,20 @@ def director_process_request(request, request_id, action):
 
         messages.success(request, "Ombi limethibitishwa na kuwasilishwa kwa Maofisa!")
 
-    return redirect('director_dashboard')
+    return redirect('employees:director_dashboard')
 
 
 # --------------------------------------------------------
 # 4. OFFICER DASHBOARD & BULK SMS & REPORTS
 # --------------------------------------------------------
 @login_required
+@user_passes_test(is_officer)
 def officer_dashboard(request):
-    """Dashboard ya Maofisa (Mwenyekiti, Katibu, Mhazini, n.k.)"""
     officer = getattr(request.user, 'officer_profile', None)
-    today = timezone.now().date()
+    tz_now = get_tz_now()
+    today = tz_now.date()
 
-    pending_requests = []
-    if RequestApplication:
-        pending_requests = RequestApplication.objects.filter(status='PEND_OFF').order_by('-id')
+    pending_requests = RequestApplication.objects.filter(status='PEND_OFF').order_by('-id') if RequestApplication else []
 
     selected_month = request.GET.get('month', str(today.month))
     selected_year = request.GET.get('year', str(today.year))
@@ -499,24 +545,19 @@ def officer_dashboard(request):
             else:
                 recipients = Employee.objects.all()
 
-            sent_count = 0
-            fail_count = 0
+            sent_count, fail_count = 0, 0
 
             for emp in recipients:
                 phone, _ = extract_contact_info(emp)
                 if phone:
                     sms_response = send_sms_notification(phone, message_text)
-                    
-                    is_sent = False
-                    status_str = 'FAILED'
+                    is_sent, status_str = False, 'FAILED'
                     
                     if isinstance(sms_response, dict):
                         if sms_response.get('status') == 'success':
-                            is_sent = True
-                            status_str = 'DELIVERED'
+                            is_sent, status_str = True, 'DELIVERED'
                     elif sms_response is True:
-                        is_sent = True
-                        status_str = 'DELIVERED'
+                        is_sent, status_str = True, 'DELIVERED'
 
                     if SMSLog is not None:
                         try:
@@ -529,7 +570,7 @@ def officer_dashboard(request):
                                 target_group=target_group
                             )
                         except Exception as log_err:
-                            print(f"[SMSLog Creation Error]: {str(log_err)}")
+                            logger.error(f"[SMSLog Creation Error]: {str(log_err)}")
 
                     if is_sent:
                         sent_count += 1
@@ -538,8 +579,7 @@ def officer_dashboard(request):
 
             current_officer_name = get_employee_full_name(officer) if officer else request.user.username
             
-            all_officers = Officer.objects.exclude(user=request.user)
-            for off in all_officers:
+            for off in Officer.objects.exclude(user=request.user):
                 off_phone, _ = extract_contact_info(off)
                 if off_phone:
                     copy_msg = f"[NAKALA YA UJUMBE]\nImetumwa na: {current_officer_name}\nKundi: {target_group}\n\n{message_text}"
@@ -559,18 +599,11 @@ def officer_dashboard(request):
                             pass
 
             messages.success(request, f"SMS Zimetumwa kwa walengwa! Zilizofika: {sent_count}, Nakala zimetumwa kwa Maofisa wenzako.")
-            return redirect('officer_dashboard')
+            return redirect('employees:officer_dashboard')
         else:
             messages.error(request, "Tafadhali jaza kundi na ujumbe wa SMS kikamilifu.")
 
-    sms_logs = []
-    if SMSLog is not None:
-        try:
-            sms_logs = SMSLog.objects.all().order_by('-created_at')[:20]
-        except Exception as e:
-            print(f"[SMSLog Fetch Error]: {str(e)}")
-            sms_logs = []
-
+    sms_logs = SMSLog.objects.all().order_by('-created_at')[:20] if SMSLog is not None else []
     all_employees = Employee.objects.all().order_by('first_name', 'last_name')
 
     context = {
@@ -590,17 +623,18 @@ def officer_dashboard(request):
 
 
 @login_required
+@user_passes_test(is_officer)
+@require_POST
 def officer_process_request(request, request_id, action):
-    """Ofisa Anapotoa Idhini ya Mwisho"""
     if RequestApplication is None:
-        return redirect('officer_dashboard')
+        return redirect('employees:officer_dashboard')
 
     leave_req = get_object_or_404(RequestApplication, id=request_id)
-    emp_user = leave_req.user
-    employee = getattr(emp_user, 'employee_profile', None)
+    emp_user = getattr(leave_req, 'user', getattr(leave_req.employee, 'user', None) if hasattr(leave_req, 'employee') else None)
+    employee = getattr(emp_user, 'employee_profile', getattr(leave_req, 'employee', None))
     
     emp_phone, emp_email = extract_contact_info(employee or emp_user)
-    full_name = get_employee_full_name(employee) if employee else (f"{emp_user.first_name} {emp_user.last_name}".strip() or emp_user.username)
+    full_name = get_employee_full_name(employee) if employee else (f"{emp_user.first_name} {emp_user.last_name}".strip() or emp_user.username if emp_user else "Mfanyakazi")
 
     if action == 'reject':
         leave_req.status = 'REJECTED'
@@ -616,6 +650,28 @@ def officer_process_request(request, request_id, action):
         leave_req.status = 'APPROVED'
         leave_req.save()
 
+        # Kupunguza siku za dharura au likizo kwenye LeaveBalance pindi ombi linapoidhinishwa rasmi
+        if LeaveBalance is not None and emp_user:
+            bal_obj = LeaveBalance.objects.filter(user=emp_user).first()
+            if bal_obj:
+                req_type = getattr(leave_req, 'request_type', '')
+                if req_type in ['EMERGENCY_LEAVE', 'EMERGENCY']:
+                    if bal_obj.emergency_leave_count > 0:
+                        bal_obj.emergency_leave_count -= 1
+                        bal_obj.save()
+                elif req_type in ['ANNUAL_LEAVE', 'LEAVE']:
+                    # Hapa unaweza kuhesabu siku kulingana na end_date - start_date kama ipo
+                    days_diff = 1
+                    try:
+                        if leave_req.end_date and leave_req.start_date:
+                            delta = leave_req.end_date - leave_req.start_date
+                            days_diff = max(1, delta.days + 1)
+                    except Exception:
+                        pass
+                    if bal_obj.annual_leave_days >= days_diff:
+                        bal_obj.annual_leave_days -= days_diff
+                        bal_obj.save()
+
         if emp_phone:
             msg_approved = f"Hongera {full_name}! Ombi lako la ruhusa la tarehe {leave_req.start_date} LIMEKUBALIWA kikamilifu."
             send_sms_notification(emp_phone, msg_approved)
@@ -626,7 +682,7 @@ def officer_process_request(request, request_id, action):
                 f"Ndugu {full_name},\n\n"
                 f"Tunapenda kukutaarifu kuwa ombi lako la ruhusa limekubaliwa kikamilifu.\n\n"
                 f"TAARIFA ZA RUHUSA:\n"
-                f"- Aina ya Ombi: {leave_req.get_request_type_display() if hasattr(leave_req, 'get_request_type_display') else leave_req.request_type}\n"
+                f"- Aina ya Ombi: {getattr(leave_req, 'get_request_type_display', lambda: leave_req.request_type)()}\n"
                 f"- Tarehe ya Kuanza: {leave_req.start_date}\n"
                 f"- Tarehe ya Kumaliza: {leave_req.end_date}\n"
                 f"- Sababu: {leave_req.reason}\n\n"
@@ -642,23 +698,24 @@ def officer_process_request(request, request_id, action):
                     fail_silently=True
                 )
             except Exception as e:
-                print(f"[Email Send Error]: {str(e)}")
+                logger.error(f"[Email Send Error]: {str(e)}")
 
         messages.success(request, "Idhini ya mwisho imetolewa, SMS na Email zimetumwa kwa Mfanyakazi!")
 
-    return redirect('officer_dashboard')
+    return redirect('employees:officer_dashboard')
 
 
 # --------------------------------------------------------
-# 5. KU-PRINT / EXPORT RIPOTI YA MAHUDHURIO (CSV/EXCEL)
+# 5. KU-PRINT / EXPORT RIPOTI YA MAHUDHURIO (CSV)
 # --------------------------------------------------------
 @login_required
+@user_passes_test(is_officer)
 def export_attendance_csv(request):
-    """Ina-download Ripoti ya Mahudhurio kwa Mwezi, Mwaka, au Mfanyakazi mmoja"""
     if not Attendance:
         return HttpResponse("Attendance Model haijapatikana.")
 
-    today = timezone.now().date()
+    tz_now = get_tz_now()
+    today = tz_now.date()
     month = request.GET.get('month', str(today.month))
     year = request.GET.get('year', str(today.year))
     employee_id = request.GET.get('employee', 'ALL')
@@ -688,9 +745,9 @@ def export_attendance_csv(request):
         emp_name = get_employee_full_name(att.employee)
         emp_code = att.employee.employee_code if att.employee else "N/A"
         
-        # Hapa zimesahihishwa kutumia check_in_time na check_out_time kulingana na Database table yako
         t_in = getattr(att, 'check_in_time', None) or '-'
         t_out = getattr(att, 'check_out_time', None) or '-'
+        status_val = 'LATE' if getattr(att, 'is_late', False) else getattr(att, 'status', '-')
         
         writer.writerow([
             emp_code,
@@ -699,7 +756,7 @@ def export_attendance_csv(request):
             getattr(att, 'attendance_date', '-'),
             t_in,
             t_out,
-            'LATE' if getattr(att, 'is_late', False) else getattr(att, 'status', '-')
+            status_val
         ])
 
     return response
