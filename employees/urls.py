@@ -17,5 +17,7 @@ urlpatterns = [
     path('officer/process-request/<int:request_id>/<str:action>/', views.officer_process_request, name='officer_process_request'),
     
     path('export-attendance/', views.export_attendance_csv, name='export_attendance_csv'),
-    path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    
+    # Imerekebishwa kutoka next_page='login' kwenda next_page='/' ili kuondoa kosa la NoReverseMatch
+    path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
 ]

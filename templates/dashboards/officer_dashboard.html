@@ -191,10 +191,10 @@
     }
     
     .action-btns { display: flex; gap: 10px; margin-top: 14px; }
-    .btn-approve { background-color: #16a34a; color: white; padding: 7px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(22,163,74,0.2); transition: 0.2s; }
+    .btn-approve { background-color: #16a34a; color: white; padding: 7px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(22,163,74,0.2); transition: 0.2s; }
     .btn-approve:hover { background-color: #15803d; }
     
-    .btn-reject { background-color: #ef4444; color: white; padding: 7px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(239,68,68,0.2); transition: 0.2s; }
+    .btn-reject { background-color: #ef4444; color: white; padding: 7px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(239,68,68,0.2); transition: 0.2s; }
     .btn-reject:hover { background-color: #dc2626; }
 
     .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; letter-spacing: 0.02em; }
@@ -242,7 +242,6 @@
                 📅 Leo ni: <strong style="color: #334155;">{% now "j F Y" %}</strong>
             </div>
             
-            <!-- LOGOUT FORM (Imebadilishwa kwenda authentication:logout) -->
             <form method="POST" action="{% url 'authentication:logout' %}" style="margin: 0; display: inline-block;">
                 {% csrf_token %}
                 <button type="submit" class="btn-logout-custom">
@@ -346,9 +345,18 @@
                             <div><strong>Aina:</strong> <span style="color: var(--secondary-denim);">{{ req.get_request_type_display|default:req.request_type }}</span></div>
                             <div style="margin-top: 2px;"><strong>Sababu:</strong> {{ req.reason }}</div>
                         </div>
+                        
+                        <!-- SEHEMU ILIYOBADILISHWA: Imewekwa FOMU ya POST badala ya GET link ili kuondoa HTTP ERROR 405 -->
                         <div class="action-btns">
-                            <a href="{% url 'employees:officer_process_request' req.id 'approve' %}" class="btn-approve">✓ Kubali (Approve)</a>
-                            <a href="{% url 'employees:officer_process_request' req.id 'reject' %}" class="btn-reject">✕ Kataa (Reject)</a>
+                            <form action="{% url 'employees:officer_process_request' req.id 'approve' %}" method="POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-approve">✓ Kubali (Approve)</button>
+                            </form>
+
+                            <form action="{% url 'employees:officer_process_request' req.id 'reject' %}" method="POST" style="margin: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-reject">✕ Kataa (Reject)</button>
+                            </form>
                         </div>
                     </div>
                     {% endfor %}

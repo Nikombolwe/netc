@@ -2,6 +2,7 @@ import json
 import datetime
 from datetime import time, timedelta
 import requests
+import logging
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -15,43 +16,63 @@ from django.apps import apps
 from employees.models import Employee, Officer
 from .models import Attendance
 
+logger = logging.getLogger(__name__)
 
 # =====================================================================
 # UTILITY FUNCTIONS (SDASMS & EMAIL NOTIFICATIONS)
 # =====================================================================
 
-def send_sms_notification(phone_number, message_text):
+def format_phone_number(phone_number):
     """
-    Function ya kutuma SMS kwa kutumia SDASMS API na Sender ID ya NETC HQ.
+    Inasafisha na kubadilisha namba ya simu kuwa kwenye format ya Kitanzania (255XXXXXXXXX).
     """
     if not phone_number:
-        print("[SDASMS Alert]: Namba ya simu haijatolewa/haipo kwenye profile ya mtumiaji!")
+        return None
+    cleaned_number = str(phone_number).strip().replace('+', '').replace(' ', '').replace('-', '')
+    if cleaned_number.startswith('0') and len(cleaned_number) == 10:
+        cleaned_number = '255' + cleaned_number[1:]
+    elif (cleaned_number.startswith('7') or cleaned_number.startswith('6')) and len(cleaned_number) == 9:
+        cleaned_number = '255' + cleaned_number
+    if cleaned_number.startswith('255') and len(cleaned_number) == 12:
+        return cleaned_number
+    return None
+
+
+def send_sms_notification(phone_number, message_text):
+    """
+    Function iliyoboreshwa ya kutuma SMS kwa kutumia SDASMS API (api_token kwenye JSON payload).
+    """
+    formatted_phone = format_phone_number(phone_number)
+    if not formatted_phone:
+        print(f"[SDASMS Alert]: Namba ya simu '{phone_number}' siyo sahihi au ina upungufu wa tarakimu!")
         return
 
-    # Safisha namba ya simu iwe kwenye format ya 255...
-    phone_number = str(phone_number).strip().replace('+', '').replace(' ', '')
-    if phone_number.startswith('0'):
-        phone_number = '255' + phone_number[1:]
+    if not message_text:
+        print("[SDASMS Alert]: Ujumbe hauwezi kuwa mtupu!")
+        return
 
-    API_TOKEN = "167|2eiLhXwLf3x4SEb1pACaQiCMiKpUXh2RcEuR4tQhf9be8aad"
-    URL = "https://my.sdasms.com/api/v3/sms/send"
+    API_TOKEN = "1b0b6c399f46bff4798ea3e6883df2586891b78c23e69a4efd4e7682c434134f"
+    URL = "https://www.swahilisms.co.tz/api/v1/sms/send"
 
     headers = {
-        "Authorization": f"Bearer {API_TOKEN}",
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
 
     payload = {
-        "recipient": phone_number,
+        "api_token": API_TOKEN,
+        "recipient": formatted_phone,
         "message": message_text,
-        "sender_id": "NETC HQ"
+        "sender_id": "NETC HQ"  # Imebadilishwa kulingana na Sender ID halisi ya akaunti yako [cite: 1]
     }
 
     try:
         response = requests.post(URL, json=payload, headers=headers, timeout=10, verify=False)
-        res_data = response.json()
-        print(f"[SDASMS Response to {phone_number}]: {res_data}")
+        try:
+            res_data = response.json()
+        except json.JSONDecodeError:
+            res_data = response.text
+        print(f"[SDASMS Response to {formatted_phone}]: Status {response.status_code} - {res_data}")
     except Exception as e:
         print(f"[SDASMS Error]: {str(e)}")
 
