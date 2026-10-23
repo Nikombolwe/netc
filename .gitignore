@@ -6,4 +6,5 @@ __pycache__/
 .env
 *.env
 setting.env
-staticfiles/db.sqlite3
+staticfiles/
+db.sqlite3
